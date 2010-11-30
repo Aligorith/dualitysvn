@@ -249,32 +249,69 @@ class LabelledTextWidget(QWidget):
 		self.wText = QLineEdit(txt);
 		
 		# init layout
-		hbox = QHBoxLayout();
-		self.setLayout(hbox);
+		layout = QFormLayout();
+		self.setLayout(layout);
 		
 		# add components to layout
-		hbox.addWidget(self.wLabel);
-		hbox.addWidget(self.wText);
+		layout.addRow(self.wLabel, self.wText);
 
 	# Updates =========================================
 	
 
 # -----------------------------------------
+# Dialogs 
+
+# SVN Operation Dialog
+class SvnOperationDialog(QDialog):
+	pass;
+	
+# SVN Commit Dialog
+class SvnCommitDialog(QDialog):
+	pass;
+
+# -----------------------------------------
 # Branch Panes
 
 # Base define for a pane describing a branch
-class BranchPane(QGroupBox):
+class BranchPane(QWidget):
+	# Class Defines ========================================================
+	# Type/Status of Branch
+	TYPE_TRUNK, TYPE_TRUNK_REF, TYPE_BRANCH = range(3);
+	
+	# Instance Settings ====================================================
 	__slots__ = (
-		'layout',		# (QLayout) layout manager for widget
+		# Model .......................................................
+		'branchType',		# (int) type of the branch (BranchPane.TYPE_*)
 		
-		'wUrl',			# (LabelledTextWidget) url of branch in repository
-		'wUpdate',		# (QPushButton) svn update
+		# General Layout Stuff ........................................
+		'layout',			# (QLayout) layout manager for widget
+		
+		# Widgets Stuff ...............................................
+		'wUrl',				# (LabelledTextWidget) url of branch in repository
+		'wUpdate',			# (QPushButton) svn update
+		'wApplyPatch',  	# (QPushButton) apply patch
+		
+		'wRefreshStatus',  	# (QPushButton) refresh status of 'status' box
+		'wStatusView',		# list view
+		
+		'wAdd',				# (QPushButton) svn add
+		'wDelete',			# (QPushButton) svn delete
+		
+		'wRevert',			# (QPushButton) svn revert
+		
+		'wCreatePatch',		# (QPushButton) create patch (i.e. svn diff)
+		
+		'wCommit',			# (QPushButton) svn commit - to main branch
 	);
 	
+	# Setup ================================================================
+	
 	# ctor
-	# < title: (str) the label of the box
-	def __init__(self, title):
-		QGroupBox.__init__(self, title);
+	def __init__(self, branchType):
+		super(BranchPane, self).__init__();
+		
+		# setup internal settings
+		self.branchType = branchType;
 		
 		# setup layout manager
 		self.layout = QVBoxLayout();
@@ -285,57 +322,133 @@ class BranchPane(QGroupBox):
 		
 	# main widget init
 	def setupUI(self):
-		# url widget
-		self.wUrl = LabelledTextWidget("URL", "branchUrl", 
+		# 1) url widget
+		self.wUrl = LabelledTextWidget("URL", "https://svnroot/my-branch", 
 			"URL pointing to where the branch is stored in the SVN repository");
 		self.layout.addWidget(self.wUrl);
 		
-		# space
+		# space ................
 		self.layout.addSpacing(15);
 		
-		# update from repository
+		# 2) "update" group
+		gbox = QGridLayout();
+		gbox.setSpacing(0);
+		self.layout.addLayout(gbox);
+		
+		# 2a) update from repository 
 		self.wUpdate = QPushButton("SVN Update");
-		self.layout.addWidget(self.wUpdate);
+		self.wUpdate.clicked.connect(self.svnUpdate);
+		gbox.addWidget(self.wUpdate, 1,1); # r1 c1
 		
-		# space
+		# 2b) apply patch
+		self.wApplyPatch = QPushButton("Apply Patch");
+		self.wApplyPatch.clicked.connect(self.svnApplyPatch);
+		gbox.addWidget(self.wApplyPatch, 2,1); # r2 c1
+		
+		# space ................
 		self.layout.addSpacing(15);
 		
-		# status
-		self.layout.addWidget(QLabel("Status:"))
+		# 3) "status" group
+		gbox = QGridLayout();
+		self.layout.addLayout(gbox);
 		
-
-# -----------------------------------------
-# Working Copy Pane
-
-class WorkingCopyPane(QGroupBox):
-	def __init__(self):
-		QGroupBox.__init__(self, "Working Copy");
+		# 3.1a) "status" label
+		gbox.addWidget(QLabel("Status:"), 1,1); # r1 c1
 		
-		hbox = QHBoxLayout();
-		self.setLayout(hbox);
+		# 3.1b) "refresh" button
+		# FIXME: need icons...
+		self.wRefreshStatus = QPushButton(QIcon.fromTheme("view-refresh"), "Refresh"); 
+		self.wRefreshStatus.clicked.connect(self.svnRefreshStatus);
+		gbox.addWidget(self.wRefreshStatus, 1,3); # r1 c3
 		
-		# left
-		vbox = QVBoxLayout();
-		hbox.addLayout(vbox);
+		# 3.2) status list
+		# FIXME: this is just placeholder 
+		self.wStatusView = QTreeView()
+		self.wStatusView.setRootIsDecorated(False)
+		self.wStatusView.setAlternatingRowColors(True)
 		
-		self.wAdd = QPushButton("Add Files/Directories");
-		vbox.addWidget(self.wAdd);
+		gbox.addWidget(self.wStatusView, 2,1, 1,3); # r2 c1, h1,w3
 		
-		self.wRename = QPushButton("Rename Files/Directories");
-		vbox.addWidget(self.wRename);
+		# ...................
 		
-		self.wDelete = QPushButton("Delete Files/Directories");
-		vbox.addWidget(self.wDelete);
+		# 4) "add/delete" group
+		gbox = QGridLayout();
+		gbox.setSpacing(0);
+		self.layout.addLayout(gbox);
 		
-		# right
-		vbox = QVBoxLayout();
-		hbox.addLayout(vbox);
+		# 4a) add
+		self.wAdd = QPushButton("Add");
+		self.wAdd.clicked.connect(self.svnAdd);
+		gbox.addWidget(self.wAdd, 1,1); # r1 c1
 		
-		self.wApplyPatch = QPushButton("Apply Patch");
-		vbox.addWidget(self.wApplyPatch);
+		# 4b) delete
+		self.wDelete = QPushButton("Delete");
+		self.wDelete.clicked.connect(self.svnDelete);
+		gbox.addWidget(self.wDelete, 1,2); # r1 c2
 		
-		self.wExport = QPushButton("Export");
-		vbox.addWidget(self.wExport);
+		# ...................
+		
+		# 5) Revert
+		self.wRevert = QPushButton("Revert");
+		self.wRevert.clicked.connect(self.svnRevert);
+		self.layout.addWidget(self.wRevert);
+		
+		# ...................
+		
+		# 6) "Commit" group
+		gbox = QGridLayout();
+		gbox.setSpacing(0);
+		self.layout.addLayout(gbox);
+		
+		# 6a) Create Patch
+		self.wCreatePatch = QPushButton("Create Patch");
+		self.wCreatePatch.clicked.connect(self.svnCreatePatch);
+		gbox.addWidget(self.wCreatePatch, 1,1); # r1 c1
+		
+		# 6b) Commit
+		# WATCHIT - "Reintegrate branch" for branch...
+		self.wCommit = QPushButton("Commit");
+		self.wCommit.clicked.connect(self.svnCommit);
+		gbox.addWidget(self.wCommit, 2,1); # r2 c1
+		
+	# Callbacks ==============================================================
+	
+	# Placeholder ------------------------------------------------------------
+	
+	def unimplementedFeatureCb(self, feature):
+		QMessageBox.warning(self,
+			feature,
+			"Feature not yet implemented")
+	
+	# Working Copy Import ----------------------------------------------------
+	
+	def svnUpdate(self):
+		self.unimplementedFeatureCb("Update");
+	
+	def svnApplyPatch(self):
+		self.unimplementedFeatureCb("Apply Patch");
+	
+	# Status List Ops ---------------------------------------------------------
+	
+	def svnRefreshStatus(self):
+		self.unimplementedFeatureCb("Refresh Status");
+	
+	# Status List Dependent --------------------------------------------------
+	
+	def svnAdd(self):
+		self.unimplementedFeatureCb("Add");
+		
+	def svnDelete(self):
+		self.unimplementedFeatureCb("Delete");
+		
+	def svnRevert(self):
+		self.unimplementedFeatureCb("Revert");
+	
+	def svnCreatePatch(self):
+		self.unimplementedFeatureCb("Create Patch");
+		
+	def svnCommit(self):
+		self.unimplementedFeatureCb("Commit");
 
 # -----------------------------------------
 # Main Window
@@ -348,9 +461,9 @@ class DualityWindow(QWidget):
 	
 	__slots__ = (
 		'wDirectory',
-		'pBranch1',
-		'pBranch2',
-		'pWorkingCopy'
+		'wTabs',
+		
+		'branchTabs',
 	);
 	
 	# Setup ========================================== 
@@ -375,23 +488,15 @@ class DualityWindow(QWidget):
 		
 		# 1) directory panel
 		self.wDirectory = LabelledTextWidget("W/C Directory", "src/", "Directory where working copy is located");
-		mainVBox.addWidget(self.wDirectory)
+		mainVBox.addWidget(self.wDirectory);
 		
-		# 2) layout container for the branch-option containers
-		hbox = QHBoxLayout();
-		mainVBox.addLayout(hbox);
+		# 2) tab panel
+		self.wTabs = QTabWidget();
+		mainVBox.addWidget(self.wTabs);
 		
-		# 2a) left branch - main
-		self.pBranch1 = BranchPane("Branch");
-		hbox.addWidget(self.pBranch1);
-		
-		# 2b) right branch - secondary
-		self.pBranch2 = BranchPane("Trunk");
-		hbox.addWidget(self.pBranch2);
-		
-		# 3) working copy panel
-		self.pWorkingCopy = WorkingCopyPane();
-		mainVBox.addWidget(self.pWorkingCopy);
+		# 2a) first branch
+		self.pBranch1 = BranchPane();
+		self.wTabs.addTab(self.pBranch1, "Trunk");
 
 # -----------------------------------------
 	
