@@ -33,6 +33,8 @@ import sys
 import os
 import shutil
 
+import textwrap
+
 # --------------------------------
 # Top Level Defines
 
@@ -102,11 +104,7 @@ def duplicateSvnMetadata(root):
 			
 	# return list of errors
 	return errors;
-	
-# Get list of changed files
-def svnGetChangedFiles(srcdir):
-	pass;
-	
+
 # --------------------------------
 # System Behaviour
 
@@ -150,69 +148,6 @@ def commitChanges(filesList, logMessage):
 	pass;
 
 ###########################################
-# Data Model
-
-import ConfigParser
-
-# Defines all the critical configuration information for
-# branching management
-class ConfigProfile:
-	# Instance Variables ============================
-	__slots__ = (
-		'srcdir',		# (str) directory where working copy is located
-		
-		'trunk_url',	# (str) URL for "trunk" SVN Tree
-		'branch_url',	# (str) URL for "branch" SVN Tree (when available/in use)
-		
-		'branch_name' 	# (str) name of the new branch
-	);
-	
-	# ctor
-	def __init__(self):
-		# init vars
-		self.srcdir = ".";
-		self.trunk_url = "https://svnroot/trunk";
-		self.branch_url = None;
-		self.branch_name = None;
-		
-		# read in profile from "current directory"
-		self.loadProfile();
-		
-	# Load/Save =====================================
-	
-	# try to open a file-pointer to the file
-	def getFp(self, create=False):
-		# get filename
-		fn = os.path.join(".", "svn_config.duality");
-		
-		# if 'create', open it for writing
-		if create:
-			return open(fn, 'w');
-		# otherwise, only open for reading if existing
-		elif os.path.exists(fn):
-			return open(fn, 'r');
-		else:
-			return None;
-	
-	# load profile file from current directory
-	def load(self):
-		f = self.getFp();
-		if f:
-			# FIXME: use config parser to do this...
-			pass
-				
-				
-		
-	# save profile to file in current directory
-	def save(self):
-		f = self.getFp(True);
-		
-		# write settings
-		# FIXME: use config parser to do this
-		
-		f.close();
-
-###########################################
 # UI
 
 import PyQt4
@@ -226,6 +161,11 @@ from PyQt4.QtGui import *
 # Text Field with a Label
 class LabelledTextWidget(QWidget):
 	__slots__ = (
+		'readCallback', 	# (fn(obj)=str) callback function to get (as a string) the value of the property
+		'writeCallback', 	# (fn(obj,str)) callback function which writes the value in the textfield back to the property
+		
+		'modelObj',			# (obj) object where text data is stored
+		
 		'wLabel',	# (QLabel) label for text box
 		'wText',	# (QLineEdit) text box control
 	);
@@ -242,11 +182,17 @@ class LabelledTextWidget(QWidget):
 		# init self
 		self.setToolTip(tooltip);
 		
+		# placeholders for callbacks
+		self.modelObject = None;
+		self.readCallback = None;
+		self.writeCallback = None;
+		
 		# create widgets and bind events
 			# label
 		self.wLabel = QLabel(name + ":");
 			# text box
 		self.wText = QLineEdit(txt);
+		self.wText.textChanged.connect(self.writeOutVal);
 		
 		# init layout
 		layout = QFormLayout();
@@ -255,19 +201,317 @@ class LabelledTextWidget(QWidget):
 		# add components to layout
 		layout.addRow(self.wLabel, self.wText);
 
-	# Updates =========================================
+	# Methods =========================================
 	
+	# set model
+	def bindModel(self, model):
+		# set model
+		self.modelObject = model;
+		
+		# try to flush
+		self.readInVal();
+	
+	# bind callback functions to get values from source and write changes back
+	# < readValFunc: (fn(obj)=str) callback function to get (as a string) the value of the property
+	# > writeValFunc: (fn(obj,str)) callback function which writes the value in the textfield back to the property
+	def bindCallbacks(self, readValFunc, writeValFunc):
+		self.readCallback = readValFunc;
+		self.writeCallback = writeValFunc;
+		
+	# wrappers for our callbacks
+	def readInVal(self):
+		if self.readCallback and self.modelObject:
+			self.wText.setText(self.readCallback(self.modelObject));
+	
+	def writeOutVal(self):
+		if self.writeCallback and self.modelObject:
+			self.writeCallback(self.modelObject, self.wText.getText());
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Visualise output from SVN operations as a list
+class SvnOperationList(QTreeView):
+	def __init__(self):
+		super(SvnOperationList, self).__init__();
+		
+		# view setup settings
+		self.setRootIsDecorated(False);
+		self.setAlternatingRowColors(True);
+		
+		# model settings
+		
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Data item that occurs in SvnStatusList's model
+
+# Show "status" of files/directories within working copy,
+# allowing some to be included/excluded from SVN operations
+class SvnStatusList(QTreeView):
+	# Setup =============================================
+	
+	def __init__(self):
+		super(SvnStatusList, self).__init__();
+		
+		# view setup settings
+		self.setRootIsDecorated(False);
+		self.setAlternatingRowColors(True);
+		
+		# model settings
+		
 
 # -----------------------------------------
 # Dialogs 
 
 # SVN Operation Dialog
 class SvnOperationDialog(QDialog):
-	pass;
+	# Class Defines ====================================
+	# status of process
+	STATUS_WORKING, STATUS_DONE, STATUS_FAILED = range(3);
+	
+	# Setup ============================================
+	
+	# ctor
+	def __init__(self, parent, opName):
+		super(SvnOperationDialog, self).__init__(parent);
+		
+		# init status
+		self.opName = opName;
+		self.status = SvnOperationDialog.STATUS_WORKING;
+		self.args = [];
+		
+		# toplevel stuff
+		self.setupProcess();
+		self.setName();
+		
+		# setup UI
+		self.layout = QVBoxLayout();
+		self.setLayout(self.layout);
+		
+		self.setupUI();
+		
+	# main widget setup
+	def setupUI(self):
+		# 1) progress log group 
+		gb = QGroupBox("Progress...");
+		self.layout.addWidget(gb);
+		
+		grp = QGridLayout();
+		gb.setLayout(grp);
+		
+		# 1a) progress log box
+		self.wStatus = SvnOperationList();
+		grp.addWidget(self.wStatus, 1,1); # r1 c1
+		
+		# 1b) progress bar?
+		# TODO
+		
+		# 3) ok/cancel
+		grp = QDialogButtonBox();
+		self.layout.addWidget(grp);
+		
+		# 3a) ok
+		# TODO: needs validation that settings are doen
+		self.wOk = grp.addButton(QDialogButtonBox.Ok);
+		self.wOk.setEnabled(False);
+		self.wOk.clicked.connect(self.accept);
+		
+		# 3b) cancel 
+		self.wCancel = grp.addButton(QDialogButtonBox.Cancel);
+		self.wCancel.clicked.connect(self.reject);
+		
+	# setup "process" for grabbing stuff from
+	def setupProcess(self):
+		# create process object - reuse for every instance...
+		self.process = QProcess();
+		
+		# attach callbacks
+		self.connect(self.process, SIGNAL("readyReadStandardOutput()"), self.readOutput);
+		self.connect(self.process, SIGNAL("readyReadStandardError()"), self.readErrors);
+		self.connect(self.process, SIGNAL("processExited()"), self.pexited);
+		
+	# Methods ==========================================
+	
+	# External Setup API ------------------------------
+	
+	# Add a list of arguments to be passed to svn when running it
+	# args: (list<str>) list of arguments to run
+	def addArgs(self, args):
+		self.args += args;
+		
+	# Working directory and environment settings
+	def setupEnv(self, env):
+		pass;
+		
+	# Start running the svn operation
+	def go(self):
+		self.startProcess();
+	
+	# Internal ---------------------------------------
+	
+	# Set name of dialog, as displayed in the titlebar
+	def setName(self):
+		if self.status == SvnOperationDialog.STATUS_WORKING:
+			self.setWindowTitle(self.opName + " in Progress... - Duality SVN");
+		elif self.status == SvnOperationDialog.STATUS_DONE:
+			self.setWindowTitle(self.opName + " Done! - Duality SVN");
+		else:
+			self.setWindowTitle(self.opName + " Error! - Duality SVN");
+			
+	# Callbacks ======================================
+	
+	# Process ----------------------------------------
+	
+	def startProcess(self):
+		# try and start the process now
+		self.process.start("svn", self.args);
+		
+		if self.process.state() == QProcess.NotRunning:
+			# msgbox warning about error
+			QMessageBox.warning(self,
+				"SVN Error",
+				"Could perform %s operation" % (self.opName));
+		
+	def endProcess(self):
+		# kill process - only way to get rid of console apps on windows
+		self.process.kill();
+	
+	def readOutput(self):
+		line = str(self.process.readLine()).rstrip("\n");
+		self.wStatus.appendFromStr(line);
+	
+	def readErrors(self):
+		#self.wStatus.appendFromStr("Error: " + QString(self.process.readStderr()));
+		pass;
+		
+	# Buttons ------------------------------------------
+	
+	# callback called when cancelling dialog
+	def reject(self):
+		# end the process first
+		self.endProcess();
+		# TODO: feedback on whether this succeeded
+		
+		# now, cancel the dialog using it's own version
+		super(SvnOperationDialog, self).reject();
+		
+	# callback called when svn operation process ends
+	def pexited(self):
+		# if exited with some problem, make sure we warn
+		# TODO: set own status codes...?
+		if self.process.exitStatus() == QProcess.CrashExit:
+			QMessageBox.warning(self,
+				"SVN Error",
+				"%s operation was not completed successfully" % (self.opName));
+		
+		# enable the "done" button now, and disable cancel (not much we can do)
+		self.wOk.setEnabled(True);
+	
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	
 # SVN Commit Dialog
+# Prepare commit log for committing some changes. 
+#
+# TODO: have an alternative interface with fields for structured logs?
 class SvnCommitDialog(QDialog):
-	pass;
+	# Class Defines ====================================
+	# Output filename for temp log file
+	LOG_FILENAME = "commitlog.duality.txt"
+	
+	# Word-Wrap
+	wordWrapper = textwrap.TextWrapper();
+	
+	# Instance Settings ================================
+	__slots__ = (
+		'layout',	# (QLayout) layout manager for widget
+	);
+	
+	# Setup ============================================
+	
+	# ctor
+	def __init__(self, parent):
+		super(SvnCommitDialog, self).__init__(parent);
+		
+		# toplevel stuff
+		self.setWindowTitle("Commit");
+		
+		# setup UI
+		self.layout = QVBoxLayout();
+		self.setLayout(self.layout);
+		
+		self.setupUI();
+		
+	# main widget init
+	def setupUI(self):
+		# 1) "staged" files
+		gb = QGroupBox("Changes Pending");
+		self.layout.addWidget(gb);
+		
+		grp = QVBoxLayout();
+		gb.setLayout(grp);
+		
+		# FIXME: placeholder
+		grp.addWidget(QLabel("Target Branch: " + "branchName"));
+		
+		# .............................
+		
+		# 2) commit log box
+		gb = QGroupBox("Log Message");
+		self.layout.addWidget(gb);
+		
+		grp = QVBoxLayout();
+		gb.setLayout(grp);
+		
+		# 2a) choose from previous messages
+		# TODO...
+		
+		# 2b) log message box
+		self.wLog = QTextEdit("");
+		self.wLog.setAcceptRichText(False);
+		grp.addWidget(self.wLog);
+		
+		# ..............................
+		
+		# 3) ok/cancel
+		grp = QDialogButtonBox();
+		self.layout.addWidget(grp);
+		
+		# 3a) ok - aka "commit"
+		# TODO: needs validation of commit-log first...
+		self.wCommit = grp.addButton("Commit", QDialogButtonBox.AcceptRole);
+		self.wCommit.clicked.connect(self.accept);
+		
+		# 3b) cancel 
+		self.wCancel = grp.addButton(QDialogButtonBox.Cancel);
+		self.wCancel.clicked.connect(self.reject);
+		
+	# Methods ============================================
+	
+	# get log message as a text string
+	def getLogMessage(self):
+		return self.wLog.toPlainText();
+		
+	# write log message to a temp file, and return its path/name
+	# fileN: (str) if provided, this will be the name of the file to save to
+	#			 otherwise, defaults to SvnCommitDialog.LOG_FILENAME
+	def saveLogMessage(self, fileN=None):
+		# open file for writing
+		if fileN == None:
+			fileN = SvnCommitDialog.LOG_FILENAME;
+		f = open(fileN, "w");
+		
+		# grab the log message and split into paragraphs (by line breaks)
+		logLines = self.getLogMessage().split("\n");
+		
+		# perform word wrapping on each of these paragraphs before writing
+		# so that the email clients can read this nicely
+		for paragraph in logLines:
+			lines = SvnCommitDialog.wordWrapper.wrap(paragraph);
+			for line in lines:
+				f.write("%s\n" % line);
+		
+		# finish up
+		f.close();
+		return fileN;
 
 # -----------------------------------------
 # Branch Panes
@@ -362,11 +606,7 @@ class BranchPane(QWidget):
 		gbox.addWidget(self.wRefreshStatus, 1,3); # r1 c3
 		
 		# 3.2) status list
-		# FIXME: this is just placeholder 
-		self.wStatusView = QTreeView()
-		self.wStatusView.setRootIsDecorated(False)
-		self.wStatusView.setAlternatingRowColors(True)
-		
+		self.wStatusView = SvnStatusList();
 		gbox.addWidget(self.wStatusView, 2,1, 1,3); # r2 c1, h1,w3
 		
 		# ...................
@@ -406,9 +646,12 @@ class BranchPane(QWidget):
 		gbox.addWidget(self.wCreatePatch, 1,1); # r1 c1
 		
 		# 6b) Commit
-		# WATCHIT - "Reintegrate branch" for branch...
-		self.wCommit = QPushButton("Commit");
-		self.wCommit.clicked.connect(self.svnCommit);
+		if self.branchType == BranchPane.TYPE_TRUNK_REF:
+			self.wCommit = QPushButton("Reintegrate Branch Changes");
+			self.wCommit.clicked.connect(self.svnReintegrate);
+		else:
+			self.wCommit = QPushButton("Commit");
+			self.wCommit.clicked.connect(self.svnCommit);
 		gbox.addWidget(self.wCommit, 2,1); # r2 c1
 		
 	# Callbacks ==============================================================
@@ -435,6 +678,11 @@ class BranchPane(QWidget):
 	
 	# Status List Dependent --------------------------------------------------
 	
+	# check if any entries in the list are checked
+	# - helper for all status list dependent methods
+	def statusListOkPoll(self):
+		return True; # FIXME
+	
 	def svnAdd(self):
 		self.unimplementedFeatureCb("Add");
 		
@@ -448,7 +696,40 @@ class BranchPane(QWidget):
 		self.unimplementedFeatureCb("Create Patch");
 		
 	def svnCommit(self):
-		self.unimplementedFeatureCb("Commit");
+		# get list of files to change
+		
+		# create commit dialog 
+		dlg = SvnCommitDialog(self);
+		
+		# process user response, and commit if allowed
+		reply = dlg.exec_();
+		
+		if reply == QDialog.Accepted:
+			# retrieve log message
+			# FIXME: temp testing code...
+			print "Log message obtained:"
+			print dlg.getLogMessage();
+			print "Proceeding to commit!"
+			
+			# bring up svn action dialog, and perform actual commit
+			dlg2 = SvnOperationDialog(self, "Commit");
+			dlg2.exec_();
+		else:
+			print "Commit cancelled..."
+		
+	def svnReintegrate(self):
+		# this is destructive, so must ask for confirmation in case of error
+		reply = QMessageBox.question(self, 'Commit',
+			"Are you sure you want to reintegrate changes from branch back to trunk?", 
+			QMessageBox.Yes | QMessageBox.No, 
+			QMessageBox.No);
+		
+		# only if user is self-aware, we can go ahead
+		if reply == QMessageBox.Yes:
+			self.svnCommit();
+		else:
+			print "Cancelled reintegrate..."
+ 
 
 # -----------------------------------------
 # Main Window
@@ -495,7 +776,7 @@ class DualityWindow(QWidget):
 		mainVBox.addWidget(self.wTabs);
 		
 		# 2a) first branch
-		self.pBranch1 = BranchPane();
+		self.pBranch1 = BranchPane(BranchPane.TYPE_TRUNK);
 		self.wTabs.addTab(self.pBranch1, "Trunk");
 
 # -----------------------------------------
