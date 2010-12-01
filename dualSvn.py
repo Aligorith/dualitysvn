@@ -32,6 +32,7 @@ import sys
 
 import os
 import shutil
+import subprocess
 
 import textwrap
 
@@ -114,17 +115,17 @@ def duplicateSvnMetadata(root):
 # < branchName: (str) name of the new branch (to add to svn)
 def createBranch(srcdir, target, branchName):
 	# make a copy of the existing svn metadata - i.e. setup "trunk" copy as "branch2"
-	status("Setting up Working Copy Duality...")
+	#status("Setting up Working Copy Duality...")
 	duplicateSvnMetadata(srcdir);
 	
 	# perform an "svn copy" operation to make a new branch on the repository
 	# 	WC + URL = instant commit 
-	status("Branching Commit Pending...");
+	#status("Branching Commit Pending...");
 	cmd = 'svn co "%(sd)s" %(tar)s -m "%(cm)s"' % {'sd':srcdir, 'tar':target, 'cm':"Creating '%s' branch"%(branchName)}
 	OSU_runCommand(cmd); 
 	
 	# change working copy to the branch now
-	status("Switching Working Copy to New Branch...");
+	#status("Switching Working Copy to New Branch...");
 	cmd = 'svn switch %s' % (target)
 	OSU_runCommand(cmd);
 
@@ -160,11 +161,13 @@ from PyQt4.QtGui import *
 
 # Text Field with a Label
 class LabelledTextWidget(QWidget):
-	__slots__ = (
+	__slots__ = (		
 		'readCallback', 	# (fn(obj)=str) callback function to get (as a string) the value of the property
 		'writeCallback', 	# (fn(obj,str)) callback function which writes the value in the textfield back to the property
 		
 		'modelObj',			# (obj) object where text data is stored
+		
+		'layout',	# (QLayout) toplevel layout manager
 		
 		'wLabel',	# (QLabel) label for text box
 		'wText',	# (QLineEdit) text box control
@@ -195,11 +198,11 @@ class LabelledTextWidget(QWidget):
 		self.wText.textChanged.connect(self.writeOutVal);
 		
 		# init layout
-		layout = QFormLayout();
-		self.setLayout(layout);
+		self.layout = QFormLayout();
+		self.setLayout(self.layout);
 		
 		# add components to layout
-		layout.addRow(self.wLabel, self.wText);
+		self.layout.addRow(self.wLabel, self.wText);
 
 	# Methods =========================================
 	
@@ -246,32 +249,26 @@ class SvnOperationList(QTreeView):
 class SvnStatusListItem:
 	# Class Defines ======================================
 	# File Status
-	FSTATUS_UNCHANGED, FSTATUS_ADDED,       FSTATUS_CONFLICTED  = range(0, 3);
-	FSTATUS_DELETED,   FSTATUS_IGNORED,     FSTATUS_MODIFIED    = range(3, 6);
-	FSTATUS_REPLACED,  FSTATUS_UNVERSIONED, FSTATUS_MISSING     = range(6, 9);
-	
 	FileStatusMap = {
-		' ':FSTATUS_UNCHANGED,
-		'A':FSTATUS_ADDED,
-		'C':FSTATUS_CONFLICTED,
-		'D':FSTATUS_DELETED,
-		'I':FSTATUS_IGNORED,
-		'M':FSTATUS_MODIFIED,
-		'R':FSTATUS_REPLACED,
-#		'X' an unversioned directory created by an externals definition
-		'?':FSTATUS_UNVERSIONED,
-		'!':FSTATUS_MISSING,
-#		'~' versioned item obstructed by some item of a different kind
-	};
-		
-	# Property Status
-	PSTATUS_UNCHANGED, PSTATUS_MODIFIED, PSTATUS_CONFLICTED     = range(3);
+		' ':"Unchanged",
+		'A':"Added",
+		'C':"Conflicted",
+		'D':"Deleted",
+		'I':"Ignored",
+		'M':"Modified",
+		'R':"Replaced",
+		'X':"External",
+		'?':"Unversioned",
+		'!':"Missig",
+		'~':"Obstructed" #versioned item obstructed by some item of a different kind
+	}
 	
+	# Property Status
 	PropStatusMap = {
-		' ':PSTATUS_UNCHANGED,
-		'C':PSTATUS_CONFLICTED,
-		'M':PSTATUS_MODIFIED,
-	};
+		' ':"Unchanged",
+		'C':"Conflicted",
+		'M':"Modified"
+	}
 	
 	# Setup ==============================================
 	
@@ -283,8 +280,8 @@ class SvnStatusListItem:
 		
 		self.path = "";
 		
-		self.file_status = SvnStatusListItem.FSTATUS_UNCHANGED;
-		self.prop_status = SvnStatusListItem.PSTATUS_UNCHANGED;
+		self.file_status = SvnStatusListItem.FileStatusMap[' '];
+		self.prop_status = SvnStatusListItem.PropStatusMap[' '];
 		
 		# initialise from string
 		if initStr:
@@ -293,27 +290,22 @@ class SvnStatusListItem:
 	# parse settings from a string
 	# < initStr: (str) input string
 	def fromString(self, initStr):
-		# chop into 2 parts: status and path
-		statusStr = initStr[:7]; # first 7 columns 
-		self.path = initStr[7:]; # rest of string after status columns
-		
-		# decipher status string
-			# col 1: file status
-		self.file_status = SvnStatusListItem.FileStatusMap[statusStr[0]];
-			# col 2: property status
-		self.prop_status = SvnStatusListItem.PropStatusMap[statusStr[1]];
-		
-		# modify enabled status from placeholder
-		if self.file_status in (SvnStatusListItem.FSTATUS_UNCHANGED, FSTATUS_UNVERSIONED, FSTATUS_IGNORED):
-			self.enabled = False;
-
-# ......................
-
-# 'Model' for status list
-class SvnStatusListModel(QAbstractItemModel):
-	def __init__(self, parent=None):
-		super(SvnStatusListModel, self).__init__(parent);
-	
+		try:
+			# chop into 2 parts: status and path
+			statusStr = initStr[:7]; # first 7 columns 
+			self.path = initStr[8:]; # rest of string after status columns
+			
+			# decipher status string
+				# col 1: file status
+			self.file_status = SvnStatusListItem.FileStatusMap[statusStr[0]];
+				# col 2: property status
+			self.prop_status = SvnStatusListItem.PropStatusMap[statusStr[1]];
+			
+			# modify enabled status from placeholder
+			if self.file_status in (SvnStatusListItem.FSTATUS_UNCHANGED, FSTATUS_UNVERSIONED, FSTATUS_IGNORED):
+				self.enabled = False;
+		except:
+			pass;
 
 # ......................
 
@@ -330,7 +322,36 @@ class SvnStatusList(QTreeView):
 		self.setAlternatingRowColors(True);
 		
 		# model settings
+		self.setupModel();
 		
+	def setupModel(self):
+		# create model
+		self.model = QStandardItemModel(0, 3); # initially, 0 rows/files, but 3 columns
+		
+		# set labels for headers
+		self.model.setHorizontalHeaderLabels(QStringList(["Path", "Status", "Prop Status"]));
+		
+		# set the model
+		self.setModel(self.model);
+		
+	# Methods ===========================================
+	
+	# Refresh the status list - hook for UI command
+	def refreshList(self):
+		print "Refreshing..."
+		
+		# TODO: set working env
+		debug_cwd = r"c:\blenderdev\b250\blender" # FIXME: debugging use working dir
+		
+		# run svn status operation
+		args = ["svn", "--non-interactive", "--ignore-externals", "status"];
+		p = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=debug_cwd);
+		
+		for line in p.stdout:
+			if len(line):
+				# parse the output to create a new line
+				sitem = SvnStatusListItem(line);
+				print "created new item - %s, %s, '%s' - from '%s'" % (sitem.file_status, sitem.prop_status, sitem.path, line);
 
 # -----------------------------------------
 # Dialogs 
@@ -749,7 +770,10 @@ class BranchPane(QWidget):
 	# Status List Ops ---------------------------------------------------------
 	
 	def svnRefreshStatus(self):
-		self.unimplementedFeatureCb("Refresh Status");
+		# call refresh on list
+		self.wStatusView.refreshList();
+		
+		# update widgets...
 	
 	# Status List Dependent --------------------------------------------------
 	
@@ -816,6 +840,8 @@ class DualityWindow(QWidget):
 	# Instance Vars ==================================
 	
 	__slots__ = (
+		'layout',
+		
 		'wDirectory',
 		'wTabs',
 		
@@ -839,20 +865,52 @@ class DualityWindow(QWidget):
 	# main widget init
 	def setupUI(self):
 		# main layout container
-		mainVBox = QVBoxLayout();
-		self.setLayout(mainVBox);
+		self.layout = QVBoxLayout();
+		self.setLayout(self.layout);
 		
-		# 1) directory panel
-		self.wDirectory = LabelledTextWidget("W/C Directory", "src/", "Directory where working copy is located");
-		mainVBox.addWidget(self.wDirectory);
+		# 1) working copy panel
+		self.setupWorkingCopyPanel();
+		
+		# ..........
 		
 		# 2) tab panel
 		self.wTabs = QTabWidget();
-		mainVBox.addWidget(self.wTabs);
+		self.layout.addWidget(self.wTabs);
 		
 		# 2a) first branch
 		self.pBranch1 = BranchPane(BranchPane.TYPE_TRUNK);
 		self.wTabs.addTab(self.pBranch1, "Trunk");
+		
+	# setup working copy panel
+	def setupWorkingCopyPanel(self):
+		# 0) group box
+		gb = QGroupBox("Working Copy");
+		self.layout.addWidget(gb);
+		
+		vbox = QVBoxLayout();
+		gb.setLayout(vbox);
+		
+		# ...........
+		
+		# 1.1) directory widget
+		self.wDirectory = LabelledTextWidget("Directory", "src/", "Directory where working copy is located");
+		vbox.addWidget(self.wDirectory);
+		
+		# 1.2) browse-button for directory widget
+		def browseCb(this):
+			# get new directory
+			newDir = QFileDialog.getExistingDirectory(None, "Open Directory",
+				"/home",
+				QFileDialog.ShowDirsOnly
+				| QFileDialog.DontResolveSymlinks);
+			
+			# set this value
+			this.wText.setText(newDir);  # FIXME
+			print "New dir set"
+		
+		#self.wDirectory.browseBut = QPushButton("...");
+		#self.wDirectory.browseBut.clicked.connect(browseCb);
+		#self.wDirectory.layout.addWidget(self.wDirectory.browseBut);
 
 # -----------------------------------------
 	
