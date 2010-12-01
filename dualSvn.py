@@ -243,6 +243,79 @@ class SvnOperationList(QTreeView):
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Data item that occurs in SvnStatusList's model
+class SvnStatusListItem:
+	# Class Defines ======================================
+	# File Status
+	FSTATUS_UNCHANGED, FSTATUS_ADDED,       FSTATUS_CONFLICTED  = range(0, 3);
+	FSTATUS_DELETED,   FSTATUS_IGNORED,     FSTATUS_MODIFIED    = range(3, 6);
+	FSTATUS_REPLACED,  FSTATUS_UNVERSIONED, FSTATUS_MISSING     = range(6, 9);
+	
+	FileStatusMap = {
+		' ':FSTATUS_UNCHANGED,
+		'A':FSTATUS_ADDED,
+		'C':FSTATUS_CONFLICTED,
+		'D':FSTATUS_DELETED,
+		'I':FSTATUS_IGNORED,
+		'M':FSTATUS_MODIFIED,
+		'R':FSTATUS_REPLACED,
+#		'X' an unversioned directory created by an externals definition
+		'?':FSTATUS_UNVERSIONED,
+		'!':FSTATUS_MISSING,
+#		'~' versioned item obstructed by some item of a different kind
+	};
+		
+	# Property Status
+	PSTATUS_UNCHANGED, PSTATUS_MODIFIED, PSTATUS_CONFLICTED     = range(3);
+	
+	PropStatusMap = {
+		' ':PSTATUS_UNCHANGED,
+		'C':PSTATUS_CONFLICTED,
+		'M':PSTATUS_MODIFIED,
+	};
+	
+	# Setup ==============================================
+	
+	# ctor
+	# < (initStr): (str) optional string to parse to get relevant info
+	def __init__(self, initStr=None):
+		# init placeholders
+		self.enabled = True;
+		
+		self.path = "";
+		
+		self.file_status = SvnStatusListItem.FSTATUS_UNCHANGED;
+		self.prop_status = SvnStatusListItem.PSTATUS_UNCHANGED;
+		
+		# initialise from string
+		if initStr:
+			self.fromString(initStr);
+			
+	# parse settings from a string
+	# < initStr: (str) input string
+	def fromString(self, initStr):
+		# chop into 2 parts: status and path
+		statusStr = initStr[:7]; # first 7 columns 
+		self.path = initStr[7:]; # rest of string after status columns
+		
+		# decipher status string
+			# col 1: file status
+		self.file_status = SvnStatusListItem.FileStatusMap[statusStr[0]];
+			# col 2: property status
+		self.prop_status = SvnStatusListItem.PropStatusMap[statusStr[1]];
+		
+		# modify enabled status from placeholder
+		if self.file_status in (SvnStatusListItem.FSTATUS_UNCHANGED, FSTATUS_UNVERSIONED, FSTATUS_IGNORED):
+			self.enabled = False;
+
+# ......................
+
+# 'Model' for status list
+class SvnStatusListModel(QAbstractItemModel):
+	def __init__(self, parent=None):
+		super(SvnStatusListModel, self).__init__(parent);
+	
+
+# ......................
 
 # Show "status" of files/directories within working copy,
 # allowing some to be included/excluded from SVN operations
@@ -277,7 +350,9 @@ class SvnOperationDialog(QDialog):
 		# init status
 		self.opName = opName;
 		self.status = SvnOperationDialog.STATUS_WORKING;
-		self.args = [];
+		
+		# default global args for process first
+		self.args = ['--non-interactive']; 
 		
 		# toplevel stuff
 		self.setupProcess();
