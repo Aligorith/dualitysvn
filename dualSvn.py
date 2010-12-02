@@ -309,6 +309,18 @@ class SvnStatusListItem:
 
 # ......................
 
+# Qt wrapper for SvnStatusListItem, which represents one "row" in the list
+class SvnStatusListItemModel(QAbstractItemModel):
+	# ctor
+	# < data: (SvnStatusListItem) data that this item represents
+	def __init__(self, data):
+		# store reference to this
+		self.data = data;
+		
+	
+
+# ......................
+
 # Show "status" of files/directories within working copy,
 # allowing some to be included/excluded from SVN operations
 class SvnStatusList(QTreeView):
@@ -320,6 +332,7 @@ class SvnStatusList(QTreeView):
 		# view setup settings
 		self.setRootIsDecorated(False);
 		self.setAlternatingRowColors(True);
+		self.setUniformRowHeights(True);
 		
 		# model settings
 		self.setupModel();
@@ -337,21 +350,32 @@ class SvnStatusList(QTreeView):
 	# Methods ===========================================
 	
 	# Refresh the status list - hook for UI command
-	def refreshList(self):
+	# < wcDir: (str) working copy directory
+	def refreshList(self, wcDir):
 		print "Refreshing..."
 		
-		# TODO: set working env
-		debug_cwd = r"c:\blenderdev\b250\blender" # FIXME: debugging use working dir
+		# clear internal lists
+		self.listItems = [];
 		
 		# run svn status operation
+		# TODO: it might be better for performance to use QProcess to gradually update stuff...
 		args = ["svn", "--non-interactive", "--ignore-externals", "status"];
-		p = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=debug_cwd);
+		p = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=wcDir);
 		
 		for line in p.stdout:
 			if len(line):
 				# parse the output to create a new line
-				sitem = SvnStatusListItem(line);
-				print "created new item - %s, %s, '%s' - from '%s'" % (sitem.file_status, sitem.prop_status, sitem.path, line);
+				item = SvnStatusListItem(line);
+				print "created new item - %s, %s, '%s' - from '%s'" % (item.file_status, item.prop_status, item.path, line);
+				
+				# add this item to various lists
+				# 1) add to internal list
+				self.listItems.append(item);
+				
+				# 2) add to model
+				mItem = QStandardItem(item.path); # FIXME
+				self.model.appendRow(mItem);
+				
 
 # -----------------------------------------
 # Dialogs 
@@ -771,7 +795,8 @@ class BranchPane(QWidget):
 	
 	def svnRefreshStatus(self):
 		# call refresh on list
-		self.wStatusView.refreshList();
+		srcDir = r"c:\blenderdev\b250\blender" # FIXME: hook up to proper field
+		self.wStatusView.refreshList(srcDir);
 		
 		# update widgets...
 	
