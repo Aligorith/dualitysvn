@@ -311,12 +311,113 @@ class SvnStatusListItem:
 
 # Qt wrapper for SvnStatusListItem, which represents one "row" in the list
 class SvnStatusListItemModel(QAbstractItemModel):
+	# Class Defines =========================================
+	# Header labels
+	HeaderLabels = ("Path", "Status", "Prop Status");
+	
+	# Setup =================================================
 	# ctor
-	# < data: (SvnStatusListItem) data that this item represents
-	def __init__(self, data):
-		# store reference to this
-		self.data = data;
+	# < listItems: (list<SvnStatusListItem>) list of SvnStatusListItem's
+	def __init__(self, listItems=[], parent=None):
+		super(SvnStatusListItemModel, self).__init__(parent);
 		
+		# store reference to the list of data being shown
+		self.listItems = listItems;
+	
+	# Methods ===============================================
+	
+	# add entry
+	def add(self, item):
+		# warn everybody to update
+		idx = len(self.listItems); # always as last index of list
+		self.beginInsertRows(QModelIndex(), idx, idx);
+		
+		# add to list
+		self.listItems.append(item);
+		
+		# done updating
+		self.endInsertRows();
+	
+	# QAbstractItemMode implementation ======================
+	
+	# return the relevant data for each column's header cell
+	def headerData(self, section, orientation, role):
+		if orientation == Qt.Horizontal and role == Qt.DisplayRole:
+			# section = header name
+			return QVariant(SvnStatusListItemModel.HeaderLabels[section]);
+		
+		return None;
+		
+	# total number of attributes - static
+	def columnCount(self, parent):
+		# columns represent different attributes per record
+		return len(SvnStatusListItemModel.HeaderLabels);
+		
+	# total number of records - dynamic
+	def rowCount(self, parent):
+		# each row represents 1 record
+		return len(self.listItems);
+	
+	# return parent index of item - nothing has parents here!
+	def parent(self, index):
+		# no item is a child of anything
+		return QModelIndex();
+		
+	# get QModelIndex for row/column combination?
+	# < row: (int) row number - 0 indexed
+	# < col: (int) column number - 0 indexed
+	# < (parent): (QModelIndex) unused...
+	def index(self, row, col, parent):
+		# must be within bounds
+		if not self.hasIndex(row, col, parent):
+			return QModelIndex();
+			
+		# create model-index wrapper for this cell
+		return self.createIndex(row, col, self.listItems[row]); # last arg err...
+	
+	# get QtCore.Qt.ItemFlags
+	def flags(self, index):
+		if not index.isValid():
+			return QtCore.Qt.NoItemFlags
+		
+		# items can be selected + checked
+		return Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsUserCheckable;
+	
+	# get data for model index
+	# < index: (QModelIndex) row/column reference for cell to get data for
+	# < role: (QtCore.Qt.ItemDataRole/int) which aspect of cell to get data for
+	# > return[0]: (QVariant) relevant data, wrapped in "QVariant" wrapper (i.e. "anything goes container")
+	def data(self, index, role):
+		# valid indices only
+		if not index.isValid():
+			return None;
+		
+		# get item
+		item = self.listItems[index.row()];
+		
+		# what data to return
+		if role == Qt.DisplayRole:
+			# display data - depends on the index
+			if index.column() == 2:
+				# property status
+				return QVariant(item.prop_status);
+			elif index.column() == 1:
+				# status
+				return QVariant(item.file_status);
+			else:
+				# path
+				return QVariant(item.path);
+		elif role == Qt.ToolTipRole:
+			# tooltip - for path only
+			if index.column() == 0:
+				# TODO: have a specially formatted string with other stuff too?
+				return QVariant(item.path);
+			else:
+				# other columns have no data for now
+				return None;
+		else:
+			# other roles not supported...
+			return None;
 	
 
 # ......................
@@ -339,12 +440,7 @@ class SvnStatusList(QTreeView):
 		
 	def setupModel(self):
 		# create model
-		self.model = QStandardItemModel(0, 3); # initially, 0 rows/files, but 3 columns
-		
-		# set labels for headers
-		self.model.setHorizontalHeaderLabels(QStringList(["Path", "Status", "Prop Status"]));
-		
-		# set the model
+		self.model = SvnStatusListItemModel();
 		self.setModel(self.model);
 		
 	# Methods ===========================================
@@ -354,27 +450,21 @@ class SvnStatusList(QTreeView):
 	def refreshList(self, wcDir):
 		print "Refreshing..."
 		
-		# clear internal lists
-		self.listItems = [];
-		
 		# run svn status operation
 		# TODO: it might be better for performance to use QProcess to gradually update stuff...
 		args = ["svn", "--non-interactive", "--ignore-externals", "status"];
 		p = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=wcDir);
 		
 		for line in p.stdout:
+			# strip off newline character first
+			line = line.rstrip("\n");
+			
+			# process line
 			if len(line):
 				# parse the output to create a new line
 				item = SvnStatusListItem(line);
 				print "created new item - %s, %s, '%s' - from '%s'" % (item.file_status, item.prop_status, item.path, line);
-				
-				# add this item to various lists
-				# 1) add to internal list
-				self.listItems.append(item);
-				
-				# 2) add to model
-				mItem = QStandardItem(item.path); # FIXME
-				self.model.appendRow(mItem);
+				self.model.add(item);
 				
 
 # -----------------------------------------
