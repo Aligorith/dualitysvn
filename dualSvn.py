@@ -259,7 +259,7 @@ class SvnStatusListItem:
 		'R':"Replaced",
 		'X':"External",
 		'?':"Unversioned",
-		'!':"Missig",
+		'!':"Missing",
 		'~':"Obstructed" #versioned item obstructed by some item of a different kind
 	}
 	
@@ -276,7 +276,7 @@ class SvnStatusListItem:
 	# < (initStr): (str) optional string to parse to get relevant info
 	def __init__(self, initStr=None):
 		# init placeholders
-		self.enabled = True;
+		self.defaultEnabled = True;
 		
 		self.path = "";
 		
@@ -302,14 +302,29 @@ class SvnStatusListItem:
 			self.prop_status = SvnStatusListItem.PropStatusMap[statusStr[1]];
 			
 			# modify enabled status from placeholder
-			if self.file_status in (SvnStatusListItem.FSTATUS_UNCHANGED, FSTATUS_UNVERSIONED, FSTATUS_IGNORED):
-				self.enabled = False;
+			self.setAutoDefaultEnabledStatus();
 		except:
 			pass;
+			
+	# Enabled Status ===========================================
+	
+	# automatically determine whether "default enabled" status is on
+	def setAutoDefaultEnabledStatus(self):
+		# disable based on file status, so check on each of the bad ones...
+		badKeys = (' ', 'C', 'I', 'X', '?', '!');
+		
+		for k in badKeys:	
+			if self.file_status == SvnStatusListItem.FileStatusMap[k]:
+				self.defaultEnabled = False;
+				break;
+		else:
+			# by default (i.e. if nothing caught), this is on
+			self.defaultEnabled = True;
 
 # ......................
 
 # Qt wrapper for SvnStatusListItem, which represents one "row" in the list
+# TODO: implement support for hiding some items temporarily...
 class SvnStatusListItemModel(QAbstractItemModel):
 	# Class Defines =========================================
 	# Header labels
@@ -323,6 +338,7 @@ class SvnStatusListItemModel(QAbstractItemModel):
 		
 		# store reference to the list of data being shown
 		self.listItems = listItems;
+		self.checked = [];
 	
 	# Methods ===============================================
 	
@@ -335,8 +351,25 @@ class SvnStatusListItemModel(QAbstractItemModel):
 		# add to list
 		self.listItems.append(item);
 		
+		# if "defaultEnabled", add to checked list
+		if item.defaultEnabled:
+			self.checked.append(item);
+		
 		# done updating
 		self.endInsertRows();
+		
+	# clear all entries
+	def clearAll(self):
+		# just do a remove of all
+		totLen = len(self.listItems);
+		self.beginRemoveRows(QModelIndex(), 0, totLen);
+		
+		# clear lists
+		self.listItems = [];
+		self.checked = [];
+		
+		# done
+		self.endRemoveRows();
 	
 	# QAbstractItemMode implementation ======================
 	
@@ -383,7 +416,7 @@ class SvnStatusListItemModel(QAbstractItemModel):
 		# items can be selected + checked
 		return Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsUserCheckable;
 	
-	# get data for model index
+	# get data for model cell
 	# < index: (QModelIndex) row/column reference for cell to get data for
 	# < role: (QtCore.Qt.ItemDataRole/int) which aspect of cell to get data for
 	# > return[0]: (QVariant) relevant data, wrapped in "QVariant" wrapper (i.e. "anything goes container")
@@ -415,10 +448,37 @@ class SvnStatusListItemModel(QAbstractItemModel):
 			else:
 				# other columns have no data for now
 				return None;
+		elif role == Qt.CheckStateRole:
+			# checkable - for first column only
+			if index.column() == 0:
+				return Qt.Checked if item in self.checked else Qt.Unchecked;
+			else:
+				return None;
 		else:
 			# other roles not supported...
 			return None;
 	
+	# set data for model cell
+	# < index: (QModelIndex) cell reference
+	# < value: (QVariant) wrapper for data stored
+	# < role: (QtCore.Qt.ItemDataRole/int) should usually be edit only...
+	def setData(self, index, value, role = Qt.EditRole):
+		if index.isValid():
+			# get item
+			item = self.listItems[index.row()];
+			
+			# only checkboxes are editable...
+			if (index.column() == 0) and (role == Qt.CheckStateRole):
+				if (value == Qt.Checked):
+					self.checked.append(item);
+					return True;
+				else:
+					self.checked.remove(item);
+					return True;
+		
+		# nothing done
+		return False;
+
 
 # ......................
 
@@ -435,6 +495,9 @@ class SvnStatusList(QTreeView):
 		self.setAlternatingRowColors(True);
 		self.setUniformRowHeights(True);
 		
+		# tweak column extents
+		# TODO...
+		
 		# model settings
 		self.setupModel();
 		
@@ -449,6 +512,9 @@ class SvnStatusList(QTreeView):
 	# < wcDir: (str) working copy directory
 	def refreshList(self, wcDir):
 		print "Refreshing..."
+		
+		# clear lists first
+		self.model.clearAll();
 		
 		# run svn status operation
 		# TODO: it might be better for performance to use QProcess to gradually update stuff...
@@ -465,7 +531,6 @@ class SvnStatusList(QTreeView):
 				item = SvnStatusListItem(line);
 				print "created new item - %s, %s, '%s' - from '%s'" % (item.file_status, item.prop_status, item.path, line);
 				self.model.add(item);
-				
 
 # -----------------------------------------
 # Dialogs 
