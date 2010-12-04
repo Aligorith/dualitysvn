@@ -333,11 +333,14 @@ class SvnStatusListItemModel(QAbstractItemModel):
 	# Setup =================================================
 	# ctor
 	# < listItems: (list<SvnStatusListItem>) list of SvnStatusListItem's
-	def __init__(self, listItems=[], parent=None):
+	def __init__(self, listItems=None, parent=None):
 		super(SvnStatusListItemModel, self).__init__(parent);
 		
 		# store reference to the list of data being shown
-		self.listItems = listItems;
+		if listItems:
+			self.listItems = listItems;
+		else:
+			self.listItems = [];
 		self.checked = [];
 	
 	# Methods ===============================================
@@ -478,7 +481,23 @@ class SvnStatusListItemModel(QAbstractItemModel):
 		
 		# nothing done
 		return False;
-
+	
+	# sort the data 
+	# < col: (int) column to sort by
+	# < order: (QtCore.Qt.SortOrder/int) order to sort entries in
+	def sort(self, col, order = Qt.AscendingOrder):
+		# column index defines the key function used
+		keyFuncs = (
+			lambda x: x.path,
+			lambda x: x.file_status,
+			lambda x: x.prop_status
+		);
+		
+		# perform a reverse-order sort?
+		rev = (order == Qt.DescendingOrder);
+		
+		# sort the internal list
+		self.listItems = sorted(self.listItems, key=keyFuncs[col], reverse=rev); 
 
 # ......................
 
@@ -494,6 +513,10 @@ class SvnStatusList(QTreeView):
 		self.setRootIsDecorated(False);
 		self.setAlternatingRowColors(True);
 		self.setUniformRowHeights(True);
+		
+		# allow sorting - by the file status by default
+		self.setSortingEnabled(True);
+		self.sortByColumn(1, Qt.AscendingOrder);
 		
 		# tweak column extents
 		# TODO...
@@ -532,6 +555,9 @@ class SvnStatusList(QTreeView):
 				print "created new item - %s, %s, '%s' - from '%s'" % (item.file_status, item.prop_status, item.path, line);
 				self.model.add(item);
 				
+		# hack: force sorting to be performed again now
+		self.setSortingEnabled(True);
+		
 	# Get list of selected items to operate on
 	def getOperationList(self):
 		# just return a copy of the model's list...
@@ -981,10 +1007,17 @@ class BranchPane(QWidget):
 	
 	# Status List Dependent --------------------------------------------------
 	
-	# check if any entries in the list are checked
-	# - helper for all status list dependent methods
-	def statusListOkPoll(self):
-		return True; # FIXME
+	# error for nothing selected
+	def noDataSelectedCb(self, feature):
+		QMessageBox.error(self,
+			feature+" Error",
+			"No files to operate on. Enable some checkboxes beside paths in the Status list")
+	
+	# get list of items to operate on
+	def statusListGetOperatable(self):
+		return self.wStatusView.getOperationList();
+	
+	# ...........
 	
 	def svnAdd(self):
 		self.unimplementedFeatureCb("Add");
@@ -1000,7 +1033,10 @@ class BranchPane(QWidget):
 		
 	def svnCommit(self):
 		# get list of files to change
-		commitFiles = self.wStatusView.getOperationList();
+		commitFiles = self.statusListGetOperatable();
+		if len(commitFiles) == 0:
+			self.noDataSelectedCb("Commit");
+			return;
 		
 		# create commit dialog 
 		dlg = SvnCommitDialog(self);
@@ -1019,6 +1055,7 @@ class BranchPane(QWidget):
 			# bring up svn action dialog, and perform actual commit
 			dlg2 = SvnOperationDialog(self, "Commit");
 			# TODO: setup commands for commit action
+			
 			dlg2.exec_();
 		else:
 			print "Commit cancelled..."
