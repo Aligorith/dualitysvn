@@ -531,6 +531,11 @@ class SvnStatusList(QTreeView):
 				item = SvnStatusListItem(line);
 				print "created new item - %s, %s, '%s' - from '%s'" % (item.file_status, item.prop_status, item.path, line);
 				self.model.add(item);
+				
+	# Get list of selected items to operate on
+	def getOperationList(self):
+		# just return a copy of the model's list...
+		return self.model.checked[:];
 
 # -----------------------------------------
 # Dialogs 
@@ -724,8 +729,13 @@ class SvnCommitDialog(QDialog):
 		grp = QVBoxLayout();
 		gb.setLayout(grp);
 		
-		# FIXME: placeholder
+		# 1a) branch target
 		grp.addWidget(QLabel("Target Branch: " + "branchName"));
+		
+		# 2a) list of files - not editable
+		# FIXME: maybe we just need another status list!
+		self.wFileList = QListWidget();
+		grp.addWidget(self.wFileList);
 		
 		# .............................
 		
@@ -761,6 +771,8 @@ class SvnCommitDialog(QDialog):
 		
 	# Methods ============================================
 	
+	# Log Message ----------------------------------------
+	
 	# get log message as a text string
 	def getLogMessage(self):
 		return self.wLog.toPlainText();
@@ -787,6 +799,18 @@ class SvnCommitDialog(QDialog):
 		# finish up
 		f.close();
 		return fileN;
+		
+	# File List ----------------------------------------
+	
+	# populate file list with SvnStatusListItem elements
+	def setupFilesList(self, files):
+		# clear the widget's data first
+		self.wFileList.clear();
+		
+		# populate file list with files
+		for file in files:
+			# show paths only...
+			self.wFileList.addItem(file.path);
 
 # -----------------------------------------
 # Branch Panes
@@ -976,9 +1000,11 @@ class BranchPane(QWidget):
 		
 	def svnCommit(self):
 		# get list of files to change
+		commitFiles = self.wStatusView.getOperationList();
 		
 		# create commit dialog 
 		dlg = SvnCommitDialog(self);
+		dlg.setupFilesList(commitFiles); # TODO: have this in constructor instead?
 		
 		# process user response, and commit if allowed
 		reply = dlg.exec_();
@@ -992,6 +1018,7 @@ class BranchPane(QWidget):
 			
 			# bring up svn action dialog, and perform actual commit
 			dlg2 = SvnOperationDialog(self, "Commit");
+			# TODO: setup commands for commit action
 			dlg2.exec_();
 		else:
 			print "Commit cancelled..."
