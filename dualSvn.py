@@ -506,7 +506,9 @@ class SvnStatusListItemModel(QAbstractItemModel):
 class SvnStatusList(QTreeView):
 	# Setup =============================================
 	
-	def __init__(self):
+	# ctor
+	# < fileList: (list<SvnStatusListItem>) list of items to populate model with
+	def __init__(self, fileList=None):
 		super(SvnStatusList, self).__init__();
 		
 		# view setup settings
@@ -521,12 +523,8 @@ class SvnStatusList(QTreeView):
 		# tweak column extents
 		# TODO...
 		
-		# model settings
-		self.setupModel();
-		
-	def setupModel(self):
 		# create model
-		self.model = SvnStatusListItemModel();
+		self.model = SvnStatusListItemModel(fileList);
 		self.setModel(self.model);
 		
 	# Methods ===========================================
@@ -734,20 +732,24 @@ class SvnCommitDialog(QDialog):
 	# Setup ============================================
 	
 	# ctor
-	def __init__(self, parent):
+	# < parent: (QWidget) window that owns this dialog
+	# < (branchName): (str) string representing the name or URL of the branch changes are getting committed to
+	# < (filesList): (list<SvnStatusListItem>) list of files that will be involved in the commit
+	def __init__(self, parent, branchName, filesList):
 		super(SvnCommitDialog, self).__init__(parent);
 		
 		# toplevel stuff
-		self.setWindowTitle("Commit");
+		self.setWindowTitle("Log Message for Commit - Duality SVN");
+		self.setGeometry(150, 150, 600, 400);
 		
 		# setup UI
 		self.layout = QVBoxLayout();
 		self.setLayout(self.layout);
 		
-		self.setupUI();
+		self.setupUI(branchName, filesList);
 		
 	# main widget init
-	def setupUI(self):
+	def setupUI(self, branchName, filesList):
 		# 1) "staged" files
 		gb = QGroupBox("Changes Pending");
 		self.layout.addWidget(gb);
@@ -756,11 +758,11 @@ class SvnCommitDialog(QDialog):
 		gb.setLayout(grp);
 		
 		# 1a) branch target
-		grp.addWidget(QLabel("Target Branch: " + "branchName"));
+		grp.addWidget(QLabel("For: " + branchName));
 		
 		# 2a) list of files - not editable
 		# FIXME: maybe we just need another status list!
-		self.wFileList = QListWidget();
+		self.wFileList = SvnStatusList(filesList);
 		grp.addWidget(self.wFileList);
 		
 		# .............................
@@ -825,18 +827,6 @@ class SvnCommitDialog(QDialog):
 		# finish up
 		f.close();
 		return fileN;
-		
-	# File List ----------------------------------------
-	
-	# populate file list with SvnStatusListItem elements
-	def setupFilesList(self, files):
-		# clear the widget's data first
-		self.wFileList.clear();
-		
-		# populate file list with files
-		for file in files:
-			# show paths only...
-			self.wFileList.addItem(file.path);
 
 # -----------------------------------------
 # Branch Panes
@@ -994,7 +984,7 @@ class BranchPane(QWidget):
 		self.unimplementedFeatureCb("Update");
 	
 	def svnApplyPatch(self):
-		self.unimplementedFeatureCb("Apply Patch");
+		self.unimplementedFeatureCb("Apply Patch");		
 	
 	# Status List Ops ---------------------------------------------------------
 	
@@ -1009,9 +999,9 @@ class BranchPane(QWidget):
 	
 	# error for nothing selected
 	def noDataSelectedCb(self, feature):
-		QMessageBox.error(self,
+		QMessageBox.warning(self,
 			feature+" Error",
-			"No files to operate on. Enable some checkboxes beside paths in the Status list")
+			"No paths selected for %s operation.\nEnable some of the checkboxes beside paths in the Status list and try again." % (feature))
 	
 	# get list of items to operate on
 	def statusListGetOperatable(self):
@@ -1020,27 +1010,51 @@ class BranchPane(QWidget):
 	# ...........
 	
 	def svnAdd(self):
+		# get list of files to change
+		files = self.statusListGetOperatable();
+		if len(files) == 0:
+			self.noDataSelectedCb("Add");
+			return;
+		
 		self.unimplementedFeatureCb("Add");
 		
 	def svnDelete(self):
+		# get list of files to change
+		files = self.statusListGetOperatable();
+		if len(files) == 0:
+			self.noDataSelectedCb("Delete");
+			return;
+		
 		self.unimplementedFeatureCb("Delete");
 		
 	def svnRevert(self):
+		# get list of files to change
+		files = self.statusListGetOperatable();
+		if len(files) == 0:
+			self.noDataSelectedCb("Revert");
+			return;
+		
 		self.unimplementedFeatureCb("Revert");
 	
 	def svnCreatePatch(self):
+		# get list of files to change
+		files = self.statusListGetOperatable();
+		if len(files) == 0:
+			self.noDataSelectedCb("Create Patch");
+			return;
+		
 		self.unimplementedFeatureCb("Create Patch");
 		
 	def svnCommit(self):
 		# get list of files to change
-		commitFiles = self.statusListGetOperatable();
-		if len(commitFiles) == 0:
+		files = self.statusListGetOperatable();
+		if len(files) == 0:
 			self.noDataSelectedCb("Commit");
 			return;
 		
 		# create commit dialog 
-		dlg = SvnCommitDialog(self);
-		dlg.setupFilesList(commitFiles); # TODO: have this in constructor instead?
+		branchName = "<branchName>" # FIXME
+		dlg = SvnCommitDialog(self, branchName, files);
 		
 		# process user response, and commit if allowed
 		reply = dlg.exec_();
@@ -1049,7 +1063,7 @@ class BranchPane(QWidget):
 			# retrieve log message
 			# FIXME: temp testing code...
 			print "Log message obtained:"
-			print dlg.getLogMessage();
+			print dlg.getLogMessage(); # FIXME: make convert this to save file op...
 			print "Proceeding to commit!"
 			
 			# bring up svn action dialog, and perform actual commit
@@ -1100,8 +1114,7 @@ class DualityWindow(QWidget):
 		QWidget.__init__(self, parent);
 		
 		# main window settings
-		self.setWindowTitle('Duality SVN')
-		#self.setGeometry(150, 150, 400, 500)
+		self.setWindowTitle('Duality SVN');
 		
 		# contents
 		self.setupUI();
