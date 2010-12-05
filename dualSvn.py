@@ -447,12 +447,13 @@ class SvnStatusList(QTreeView):
 		self.setSortingEnabled(True);
 		self.sortByColumn(1, Qt.AscendingOrder);
 		
-		# tweak column extents
-		# TODO...
-		
 		# create model
 		self.model = SvnStatusListItemModel(fileList);
 		self.setModel(self.model);
+		
+		# tweak column extents - only first column should stretch
+		self.header().setStretchLastSection(False);
+		#self.header().setResizeMode(0, QHeaderView.Stretch);
 		
 	# Methods ===========================================
 	
@@ -805,6 +806,7 @@ class BranchPane(QWidget):
 		
 		# init widgets
 		self.setupUI();
+		self.updateActionWidgets();
 		
 	# main widget init
 	def setupUI(self):
@@ -858,6 +860,7 @@ class BranchPane(QWidget):
 		
 		# 3.2) status list
 		self.wStatusView = SvnStatusList();
+		self.wStatusView.clicked.connect(self.updateActionWidgets);
 		gbox.addWidget(self.wStatusView, 2,1, 1,3); # r2 c1, h1,w3
 		
 		# ...................
@@ -930,6 +933,29 @@ class BranchPane(QWidget):
 		self.wStatusView.refreshList(srcDir);
 		
 		# update widgets...
+		self.updateActionWidgets();
+		
+	# update action widgets in response to svn status list changes
+	def updateActionWidgets(self):
+		# get selection list from status list
+		files = self.statusListGetOperatable();
+		
+		# for now, enable or disable only based on whether there's anything in list
+		if len(files):
+			# enabled
+			self.wAdd.setEnabled(True);
+			self.wDelete.setEnabled(True);
+			self.wRevert.setEnabled(True);
+			self.wCreatePatch.setEnabled(True);
+			self.wCommit.setEnabled(True);
+		else:
+			# disabled
+			self.wAdd.setEnabled(False);
+			self.wDelete.setEnabled(False);
+			self.wRevert.setEnabled(False);
+			self.wCreatePatch.setEnabled(False);
+			self.wCommit.setEnabled(False);
+	
 	
 	# Status List Dependent --------------------------------------------------
 	
