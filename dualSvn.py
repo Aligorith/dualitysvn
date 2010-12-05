@@ -394,7 +394,7 @@ class SvnStatusListItemModel(QAbstractItemModel):
 					'I':QColor(Qt.darkYellow),
 					'M':QColor(Qt.blue),
 					'R':QColor(Qt.darkCyan),
-					'X':QColor(Qt.lightGray),
+					'X':QColor(Qt.yellow),
 					'?':QColor(Qt.gray),
 					'!':QColor(Qt.darkRed),
 					'~':QColor(Qt.darkRed) #versioned item obstructed by some item of a different kind
@@ -537,6 +537,7 @@ class SvnStatusList(QTreeView):
 # Dialogs 
 
 # SVN Operation Dialog
+# TODO: allow queuing up multiple operations for the same dialog?
 class SvnOperationDialog(QDialog):
 	# Class Defines ====================================
 	# status of process
@@ -558,6 +559,7 @@ class SvnOperationDialog(QDialog):
 		# toplevel stuff
 		self.setupProcess();
 		self.setName();
+		self.setGeometry(150, 150, 600, 300);
 		
 		# setup UI
 		self.layout = QVBoxLayout();
