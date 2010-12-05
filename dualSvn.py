@@ -232,7 +232,7 @@ class SvnStatusListItem:
 			self.setAutoDefaultEnabledStatus();
 		except:
 			pass;
-			
+	
 	# Enabled Status ===========================================
 	
 	# automatically determine whether "default enabled" status is on
@@ -382,6 +382,33 @@ class SvnStatusListItemModel(QAbstractItemModel):
 			else:
 				# path
 				return QVariant(item.path);
+		elif role == Qt.ForegroundRole:
+			# text color
+			if index.column() == 1:
+				# status of file = color
+				colorMap = {
+					' ':QColor(Qt.lightGray),
+					'A':QColor(Qt.darkCyan),
+					'C':QColor(Qt.red),
+					'D':QColor(Qt.darkMagenta),
+					'I':QColor(Qt.darkYellow),
+					'M':QColor(Qt.blue),
+					'R':QColor(Qt.darkCyan),
+					'X':QColor(Qt.lightGray),
+					'?':QColor(Qt.gray),
+					'!':QColor(Qt.darkRed),
+					'~':QColor(Qt.darkRed) #versioned item obstructed by some item of a different kind
+				}
+				
+				# find the right one that matches for this item
+				for shortKey,longKey in SvnStatusListItem.FileStatusMap.iteritems():
+					if longKey == item.file_status:
+						return colorMap[shortKey];
+				else:
+					# no appropriate decoration found
+					return None;
+			else:
+				return None;
 		elif role == Qt.ToolTipRole:
 			# tooltip - for path only
 			if index.column() == 0:
@@ -468,7 +495,9 @@ class SvnStatusList(QTreeView):
 		
 		# tweak column extents - only first column should stretch
 		self.header().setStretchLastSection(False);
-		#self.header().setResizeMode(0, QHeaderView.Stretch);
+		
+		#self.header().setResizeMode(0, QHeaderView.Stretch); # <--- enables nice layout
+		#self.header().setResizeMode(0, QHeaderView.Interactive); # <--- needed for user tweaking though!
 		
 	# Methods ===========================================
 	
@@ -1096,6 +1125,9 @@ class DualityWindow(QWidget):
 		# main window settings
 		self.setWindowTitle('Duality SVN');
 		
+		# data model
+		
+		
 		# contents
 		self.setupUI();
 	
@@ -1143,7 +1175,7 @@ class DualityWindow(QWidget):
 		gbox.addWidget(self.wDirectory, 1,2); # r1 c2
 		
 		# 1.2) browse-button for directory widget
-		self.wDirBrowseBut = QPushButton("..."); # FIXME: too wide
+		self.wDirBrowseBut = QPushButton("Browse...");
 		self.wDirBrowseBut.clicked.connect(self.dirBrowseCb);
 		
 		gbox.addWidget(self.wDirBrowseBut, 1,3); # r1 c3
@@ -1154,7 +1186,7 @@ class DualityWindow(QWidget):
 	def dirBrowseCb(self):
 		# get new directory
 		newDir = QFileDialog.getExistingDirectory(self, "Open Directory",
-			"/",
+			self.wDirectory.text(),
 			QFileDialog.ShowDirsOnly
 			| QFileDialog.DontResolveSymlinks);
 		
