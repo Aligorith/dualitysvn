@@ -258,8 +258,10 @@ class SvnStatusListItemModel(QAbstractItemModel):
 	HeaderLabels = ("Path", "Status", "Prop Status");
 	
 	# Setup =================================================
+	
 	# ctor
-	# < listItems: (list<SvnStatusListItem>) list of SvnStatusListItem's
+	# < (listItems): (list<SvnStatusListItem>) list of SvnStatusListItem's for populating as a filtered copy of another instance.
+	#	! Checkboxes will not be available when such a list is supplied, as further editing isn't needed.
 	def __init__(self, listItems=None, parent=None):
 		super(SvnStatusListItemModel, self).__init__(parent);
 		
@@ -269,6 +271,10 @@ class SvnStatusListItemModel(QAbstractItemModel):
 		else:
 			self.listItems = [];
 		self.checked = [];
+		
+		# checkboxes will only be shown if we're not being supplied with
+		# a list to simply display again (in another place)
+		self.checksOn = (listItems is None);
 	
 	# Methods ===============================================
 	
@@ -343,8 +349,14 @@ class SvnStatusListItemModel(QAbstractItemModel):
 		if not index.isValid():
 			return QtCore.Qt.NoItemFlags
 		
-		# items can be selected + checked
-		return Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsUserCheckable;
+		# at very least, items can be selected
+		flags = Qt.ItemIsEnabled | Qt.ItemIsSelectable;
+		
+		# if we can show checkboxes, include that too
+		if self.checksOn:
+			flags |= Qt.ItemIsUserCheckable;
+		
+		return flags;
 	
 	# get data for model cell
 	# < index: (QModelIndex) row/column reference for cell to get data for
@@ -378,7 +390,7 @@ class SvnStatusListItemModel(QAbstractItemModel):
 			else:
 				# other columns have no data for now
 				return None;
-		elif role == Qt.CheckStateRole:
+		elif (role == Qt.CheckStateRole) and (self.checksOn):
 			# checkable - for first column only
 			if index.column() == 0:
 				return Qt.Checked if item in self.checked else Qt.Unchecked;
@@ -398,7 +410,7 @@ class SvnStatusListItemModel(QAbstractItemModel):
 			item = self.listItems[index.row()];
 			
 			# only checkboxes are editable...
-			if (index.column() == 0) and (role == Qt.CheckStateRole):
+			if (index.column() == 0) and (role == Qt.CheckStateRole) and (self.checksOn):
 				if (value == Qt.Checked):
 					self.checked.append(item);
 					return True;
@@ -442,6 +454,9 @@ class SvnStatusList(QTreeView):
 		self.setRootIsDecorated(False);
 		self.setAlternatingRowColors(True);
 		self.setUniformRowHeights(True);
+		
+		# prevent crashes on double-clicking
+		self.setExpandsOnDoubleClick(False);
 		
 		# allow sorting - by the file status by default
 		self.setSortingEnabled(True);
@@ -818,8 +833,8 @@ class BranchPane(QWidget):
 		gbox.addWidget(QLabel("URL:"), 1,1); # r1 c1
 		
 		# 1.2) directory field
-		# TODO: perhaps this shouldn't be editable at all!
 		self.wUrl = QLineEdit("https://svnroot/my-branch");
+		self.wUrl.setReadOnly(True); # XXX: should not be editable, but we need to grab this from somewhere...
 		self.wUrl.setToolTip("URL pointing to where the branch is stored in the SVN repository");
 		
 		gbox.addWidget(self.wUrl, 1,2); # r1 c2
@@ -941,6 +956,7 @@ class BranchPane(QWidget):
 		files = self.statusListGetOperatable();
 		
 		# for now, enable or disable only based on whether there's anything in list
+		# TODO: advanced selective polling based on filtering certain stati
 		if len(files):
 			# enabled
 			self.wAdd.setEnabled(True);
