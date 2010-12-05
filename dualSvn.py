@@ -159,79 +159,6 @@ from PyQt4.QtGui import *
 # -----------------------------------------
 # Extended Widgets
 
-# Text Field with a Label
-class LabelledTextWidget(QWidget):
-	__slots__ = (		
-		'readCallback', 	# (fn(obj)=str) callback function to get (as a string) the value of the property
-		'writeCallback', 	# (fn(obj,str)) callback function which writes the value in the textfield back to the property
-		
-		'modelObj',			# (obj) object where text data is stored
-		
-		'layout',	# (QLayout) toplevel layout manager
-		
-		'wLabel',	# (QLabel) label for text box
-		'wText',	# (QLineEdit) text box control
-	);
-	
-	# Setup =========================================
-	
-	# ctor
-	# < name: (str) label to display for this field (does not need to be terminated with ':')
-	# < txt: (str) default text to display in the field
-	# < tooltip: (str) help text to display
-	def __init__ (self, name, txt, tooltip):
-		QWidget.__init__(self);
-		
-		# init self
-		self.setToolTip(tooltip);
-		
-		# placeholders for callbacks
-		self.modelObject = None;
-		self.readCallback = None;
-		self.writeCallback = None;
-		
-		# create widgets and bind events
-			# label
-		self.wLabel = QLabel(name + ":");
-			# text box
-		self.wText = QLineEdit(txt);
-		self.wText.textChanged.connect(self.writeOutVal);
-		
-		# init layout
-		self.layout = QFormLayout();
-		self.setLayout(self.layout);
-		
-		# add components to layout
-		self.layout.addRow(self.wLabel, self.wText);
-
-	# Methods =========================================
-	
-	# set model
-	def bindModel(self, model):
-		# set model
-		self.modelObject = model;
-		
-		# try to flush
-		self.readInVal();
-	
-	# bind callback functions to get values from source and write changes back
-	# < readValFunc: (fn(obj)=str) callback function to get (as a string) the value of the property
-	# > writeValFunc: (fn(obj,str)) callback function which writes the value in the textfield back to the property
-	def bindCallbacks(self, readValFunc, writeValFunc):
-		self.readCallback = readValFunc;
-		self.writeCallback = writeValFunc;
-		
-	# wrappers for our callbacks
-	def readInVal(self):
-		if self.readCallback and self.modelObject:
-			self.wText.setText(self.readCallback(self.modelObject));
-	
-	def writeOutVal(self):
-		if self.writeCallback and self.modelObject:
-			self.writeCallback(self.modelObject, self.wText.getText());
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 # Visualise output from SVN operations as a list
 class SvnOperationList(QTreeView):
 	def __init__(self):
@@ -882,9 +809,18 @@ class BranchPane(QWidget):
 	# main widget init
 	def setupUI(self):
 		# 1) url widget
-		self.wUrl = LabelledTextWidget("URL", "https://svnroot/my-branch", 
-			"URL pointing to where the branch is stored in the SVN repository");
-		self.layout.addWidget(self.wUrl);
+		gbox = QGridLayout();
+		self.layout.addLayout(gbox);
+		
+		# 1.1) url label
+		gbox.addWidget(QLabel("URL:"), 1,1); # r1 c1
+		
+		# 1.2) directory field
+		# TODO: perhaps this shouldn't be editable at all!
+		self.wUrl = QLineEdit("https://svnroot/my-branch");
+		self.wUrl.setToolTip("URL pointing to where the branch is stored in the SVN repository");
+		
+		gbox.addWidget(self.wUrl, 1,2); # r1 c2
 		
 		# space ................
 		self.layout.addSpacing(15);
@@ -1101,6 +1037,8 @@ class DualityWindow(QWidget):
 		'layout',
 		
 		'wDirectory',
+		'wDirBrowseBut',
+		
 		'wTabs',
 		
 		'branchTabs',
@@ -1149,25 +1087,38 @@ class DualityWindow(QWidget):
 		
 		# ...........
 		
-		# 1.1) directory widget
-		self.wDirectory = LabelledTextWidget("Directory", "src/", "Directory where working copy is located");
-		vbox.addWidget(self.wDirectory);
+		# 1) "directory"
+		gbox = QGridLayout();
+		vbox.addLayout(gbox);
+		
+		# 1.1) directory label
+		gbox.addWidget(QLabel("Directory:"), 1,1); # r1 c1
+		
+		# 1.2) directory field
+		self.wDirectory = QLineEdit("src/");
+		self.wDirectory.setToolTip("Directory where working copy is located");
+		
+		gbox.addWidget(self.wDirectory, 1,2); # r1 c2
 		
 		# 1.2) browse-button for directory widget
-		def browseCb(this):
-			# get new directory
-			newDir = QFileDialog.getExistingDirectory(None, "Open Directory",
-				"/home",
-				QFileDialog.ShowDirsOnly
-				| QFileDialog.DontResolveSymlinks);
-			
-			# set this value
-			this.wText.setText(newDir);  # FIXME
-			print "New dir set"
+		self.wDirBrowseBut = QPushButton("..."); # FIXME: too wide
+		self.wDirBrowseBut.clicked.connect(self.dirBrowseCb);
 		
-		#self.wDirectory.browseBut = QPushButton("...");
-		#self.wDirectory.browseBut.clicked.connect(browseCb);
-		#self.wDirectory.layout.addWidget(self.wDirectory.browseBut);
+		gbox.addWidget(self.wDirBrowseBut, 1,3); # r1 c3
+
+	# Callbacks ========================================== 
+	
+	# Working copy directory browse callback
+	def dirBrowseCb(self):
+		# get new directory
+		newDir = QFileDialog.getExistingDirectory(self, "Open Directory",
+			"/",
+			QFileDialog.ShowDirsOnly
+			| QFileDialog.DontResolveSymlinks);
+		
+		# set this directory
+		if newDir:
+			self.wDirectory.setText(newDir);
 
 # -----------------------------------------
 	
