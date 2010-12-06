@@ -306,6 +306,19 @@ class SvnStatusListItemModel(QAbstractItemModel):
 		
 		# done
 		self.endRemoveRows();
+		
+	# toggle select/deselect all
+	def toggleAllChecked(self):
+		self.beginResetModel();
+		
+		if len(self.checked):
+			# deselect all
+			self.checked = [];
+		else:
+			# select all
+			self.checked = self.listItems[:];
+			
+		self.endResetModel();
 	
 	# QAbstractItemMode implementation ======================
 	
@@ -410,13 +423,13 @@ class SvnStatusListItemModel(QAbstractItemModel):
 			else:
 				return None;
 		elif role == Qt.ToolTipRole:
-			# tooltip - for path only
-			if index.column() == 0:
-				# TODO: have a specially formatted string with other stuff too?
-				return QVariant(item.path);
-			else:
-				# other columns have no data for now
-				return None;
+			# construct tooltip for all entries
+			tooltipTemplate = "\n".join([
+				"<b>Path:</b> %s",
+				"<b>File Status:</b> %s",
+				"<b>Property Status:</b> %s"]);
+			
+			return QVariant(tooltipTemplate % (item.path, item.file_status, item.prop_status));
 		elif (role == Qt.CheckStateRole) and (self.checksOn):
 			# checkable - for first column only
 			if index.column() == 0:
@@ -898,16 +911,21 @@ class BranchPane(QWidget):
 		# 3.1a) "status" label
 		gbox.addWidget(QLabel("Status:"), 1,1); # r1 c1
 		
-		# 3.1b) "refresh" button
+		# 3.1b) "toggle all" button
+		self.wToggleAllStatus = QPushButton("Toggle All");
+		self.wToggleAllStatus.clicked.connect(self.statusToggleAll);
+		gbox.addWidget(self.wToggleAllStatus, 1,3); # r1 c3
+		
+		# 3.1c) "refresh" button
 		# FIXME: need icons...
 		self.wRefreshStatus = QPushButton(QIcon.fromTheme("view-refresh"), "Refresh"); 
 		self.wRefreshStatus.clicked.connect(self.svnRefreshStatus);
-		gbox.addWidget(self.wRefreshStatus, 1,3); # r1 c3
+		gbox.addWidget(self.wRefreshStatus, 1,4); # r1 c4
 		
 		# 3.2) status list
 		self.wStatusView = SvnStatusList();
 		self.wStatusView.clicked.connect(self.updateActionWidgets);
-		gbox.addWidget(self.wStatusView, 2,1, 1,3); # r2 c1, h1,w3
+		gbox.addWidget(self.wStatusView, 2,1, 1,4); # r2 c1, h1,w4
 		
 		# ...................
 		
@@ -973,12 +991,22 @@ class BranchPane(QWidget):
 	
 	# Status List Ops ---------------------------------------------------------
 	
+	# refresh status list
 	def svnRefreshStatus(self):
 		# call refresh on list
 		srcDir = r"c:\blenderdev\b250\blender" # FIXME: hook up to proper field
 		self.wStatusView.refreshList(srcDir);
 		
 		# update widgets...
+		self.updateActionWidgets();
+		
+	# toggle selected items
+	def statusToggleAll(self):
+		# call toggle on list model
+		# TODO: should status view provide a wrapper for this?
+		self.wStatusView.model.toggleAllChecked();
+		
+		# update widgets
 		self.updateActionWidgets();
 		
 	# update action widgets in response to svn status list changes
@@ -1002,6 +1030,9 @@ class BranchPane(QWidget):
 			self.wRevert.setEnabled(False);
 			self.wCreatePatch.setEnabled(False);
 			self.wCommit.setEnabled(False);
+			
+		# toggle button should only be active if the status list is populated
+		self.wToggleAllStatus.setEnabled(self.wStatusView.model.rowCount(None) != 0);
 	
 	
 	# Status List Dependent --------------------------------------------------
