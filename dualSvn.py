@@ -149,6 +149,149 @@ def commitChanges(filesList, logMessage):
 	pass;
 
 ###########################################
+# Settings Container
+
+import ConfigParser
+
+class DualitySettings:
+	# Class Defines ===============================
+	# default filename
+	DEFAULT_FILENAME = "branchConfig.duality";
+	
+	# Instance Vars ===============================
+	__slots__ = (
+		'fileN',			# (str) name of file to use
+		'unsaved',			# (bool) are there unsaved changes?
+		
+		'workingCopyDir',	# (str) directory of working copy
+		
+		'urlTrunk',			# (str) url of "trunk"
+		#'nameTrunk',		# (str) user-assigned name for "trunk"
+		
+		'urlBranch',		# (str) url of "branch"
+		#'nameBranch', 	# (str) user-assigned name for "branch"
+	);
+	
+	# Setup =====================================
+	
+	# ctor
+	# < (fileN): (str) optional name of file where settings are stored (as per first arg)
+	#			otherwise, derive from default name + current directory
+	def __init__(self, fileN=None):
+		# set default values first
+		self.resetDefaults();
+		
+		# make sure we have a workable file, even if this is newly added
+		self.verifyLoadFile(fileN, True);
+		
+	# Config I/O =================================
+	
+	# Verify filename
+	# < fileN: (str) name of file
+	# < (addIfInvalid): (bool) if the provided filename is invalid or null, create default filename
+	# > return[0]: (bool) whether a filename has been successfully set
+	def verifyLoadFile(self, fileN, addIfInvalid=False):
+		# validate provided string (if available), falling back on the default string
+		if fileN:
+			if os.path.exists(fileN):
+				# save filename and try to load stored settings
+				self.fileN = fileN;
+				self.load();
+			else:
+				# nullify and fall back on next step...
+				fileN = None;
+		
+		# create default filename otherwise...
+		if (fileN is None) and (addIfInvalid):
+			# find current directory 
+			# - this is where the config file will be dumped
+			# - we capture it now, in case this changes due to later ops
+			cwd = os.getcwd();
+			
+			# make and store
+			fileN = os.path.join(cwd, DualitySettings.DEFAULT_FILENAME);
+			self.fileN = fileN;
+		
+		# return whether we now have a valid filename
+		return (fileN is not None);
+		
+	# Reset settings to default values
+	def resetDefaults(self):
+		self.unsaved = False;
+		
+		# "src" dir living beside the project file
+		self.workingCopyDir = "./src";		
+		
+		# example url - represents most common situations...
+		self.urlTrunk = "https://svnroot/project/trunk";
+		
+		# no branches by default!
+		self.urlBranch = None; 
+		
+	# -----------------------
+	
+	# Load config file
+	def load(self):
+		# reset defaults
+		self.resetDefaults();
+		
+		# grab filepointer
+		with open(self.fileN, 'r') as f:
+			# create parser, and read in the file
+			cfg = ConfigParser.SafeConfigParser();
+			cfg.readfp(f);
+			
+			# grab the values for the various parts
+			self.workingCopyDir = cfg.get("Project", "WorkingCopy");
+			
+			self.urlTrunk = cfg.get("Trunk", "url");
+			
+			if cfg.has_section("Branch"):
+				self.urlBranch = cfg.get("Branch", "url");
+			
+	# Save config file
+	def save(self):
+		# create parser
+		cfg = ConfigParser.SafeConfigParser();
+		
+		# load in the settings
+		cfg.add_section("Project");
+		cfg.set("Project", "WorkingCopy", self.workingCopyDir);
+		
+		cfg.add_section("Trunk");
+		cfg.set("Trunk", "url", self.urlTrunk);
+		
+		if self.urlBranch:
+			cfg.add_section("Branch");
+			cfg.set("Branch", "url", self.urlBranch);
+			
+		# write settings to file
+		with open(self.fileN, 'wb') as cfgFile:
+			cfg.write(cfgFile);
+			
+		# clear unsaved changes flag
+		self.unsaved = False;
+		
+	# Setters =================================
+	# Note: these setters MUST be used, otherwise, we don't get the the unsaved tag being set (causing problems later)
+	
+	# < value: (str) new value
+	def setWorkingCopyDir(self, value):
+		self.workingCopyDir = value;
+		self.unsaved = True;
+		
+	# < value: (str) new value
+	def setUrlTrunk(self, value):
+		self.urlTrunk = value;
+		self.unsaved = True;
+		
+	# < value: (str) new value
+	def setUrlBranch(self, value):
+		self.urlBranch = value;
+		self.unsaved = True;
+	
+
+###########################################
 # UI
 
 import PyQt4
@@ -994,8 +1137,7 @@ class BranchPane(QWidget):
 	# refresh status list
 	def svnRefreshStatus(self):
 		# call refresh on list
-		srcDir = r"c:\blenderdev\b250\blender" # FIXME: hook up to proper field
-		self.wStatusView.refreshList(srcDir);
+		self.wStatusView.refreshList(project.workingCopyDir);
 		
 		# update widgets...
 		self.updateActionWidgets();
@@ -1158,9 +1300,6 @@ class DualityWindow(QWidget):
 		# main window settings
 		self.setWindowTitle('Duality SVN');
 		
-		# data model
-		
-		
 		# contents
 		self.setupUI();
 	
@@ -1186,7 +1325,7 @@ class DualityWindow(QWidget):
 	# setup working copy panel
 	def setupWorkingCopyPanel(self):
 		# 0) group box
-		gb = QGroupBox("Working Copy");
+		gb = QGroupBox("Project Settings");
 		self.layout.addWidget(gb);
 		
 		vbox = QVBoxLayout();
@@ -1194,20 +1333,45 @@ class DualityWindow(QWidget):
 		
 		# ...........
 		
-		# 1) "directory"
+		# 1) "Project"
+		# FIXME: this is ugly!
 		gbox = QGridLayout();
 		vbox.addLayout(gbox);
 		
-		# 1.1) directory label
-		gbox.addWidget(QLabel("Directory:"), 1,1); # r1 c1
+		# 1.1) Project label
+		gbox.addWidget(QLabel("Settings:"), 1,1); # r1 c1
 		
-		# 1.2) directory field
-		self.wDirectory = QLineEdit("src/");
+		# 1.2) Project file
+		self.wProjectFile = QLineEdit(project.fileN);
+		gbox.addWidget(self.wProjectFile, 1,2); # r1 c2
+		
+		# 1.3) Load Project
+		self.wLoadProject = QPushButton("Load");
+		self.wLoadProject.clicked.connect(self.loadProject);
+		gbox.addWidget(self.wLoadProject, 1,3); # r1 c3
+		
+		# 1.4) Save Project
+		self.wSaveProject = QPushButton("Save");
+		self.wSaveProject.clicked.connect(self.saveProject);
+		gbox.addWidget(self.wSaveProject, 1,4); # r1 c4
+		
+		# ...........
+		
+		# 2) "directory"
+		gbox = QGridLayout();
+		vbox.addLayout(gbox);
+		
+		# 2.1) directory label
+		gbox.addWidget(QLabel("Working Copy:"), 1,1); # r1 c1
+		
+		# 2.2) directory field
+		self.wDirectory = QLineEdit(project.workingCopyDir);
 		self.wDirectory.setToolTip("Directory where working copy is located");
+		self.wDirectory.textChanged.connect(self.setWorkingCopyDir);
 		
 		gbox.addWidget(self.wDirectory, 1,2); # r1 c2
 		
-		# 1.2) browse-button for directory widget
+		# 2.2) browse-button for directory widget
 		self.wDirBrowseBut = QPushButton("Browse...");
 		self.wDirBrowseBut.clicked.connect(self.dirBrowseCb);
 		
@@ -1215,21 +1379,99 @@ class DualityWindow(QWidget):
 
 	# Callbacks ========================================== 
 	
+	# Update settings ------------------------------------
+	
+	# update widgets after altering project settings
+	def updateProjectWidgets(self):
+		# directory
+		self.wDirectory.setText(project.workingCopyDir);
+		
+		# branches
+		# XXX: careful! may also need to validate other stuff
+		self.pBranch1.wUrl.setText(project.urlTrunk);
+	
+	# Project Settings -----------------------------------
+	
+	# prompt for saving unsaved file
+	def promptSave(self):
+		# get outta here if nothing needs doing
+		if project.unsaved == False:
+			return True;
+			
+		# prompt for saving
+		reply = QMessageBox.question(self, 'Unsaved Changes',
+			"Some project settings have been changed\nDo you want to save these changes?", 
+			QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel,
+			QMessageBox.Save);
+		
+		if reply == QMessageBox.Save:
+			# save then proceed
+			self.saveProject();
+			return True;
+		elif reply == QMessageBox.Discard:
+			# can proceed without saving
+			return True;
+		else:
+			# cannot proceed
+			return False;
+	
+	# load new project
+	def loadProject(self):
+		# if unsaved, prompt about that first
+		if self.promptSave() == False:
+			# abort if didn't manage to save first
+			return;
+		
+		# get new filename
+		fileName = QFileDialog.getOpenFileName(self, "Open File",
+			".",
+			"Duality SVN Projects (*.duality)");
+		
+		# set new filename, and try to load
+		if fileName:
+			if project.verifyLoadFile(fileName):
+				# update all settings
+				self.updateProjectWidgets();
+			else:
+				QMessageBox.warning(self,
+					"Load Duality Project",
+					"Could not open project.");
+					
+	# save project settings as-is
+	def saveProject(self):
+		# just save
+		project.save();
+	
+	# Working Copy ---------------------------------------
+	
 	# Working copy directory browse callback
 	def dirBrowseCb(self):
 		# get new directory
 		newDir = QFileDialog.getExistingDirectory(self, "Open Directory",
-			self.wDirectory.text(),
+			project.workingCopyDir,
 			QFileDialog.ShowDirsOnly
 			| QFileDialog.DontResolveSymlinks);
 		
 		# set this directory
 		if newDir:
-			self.wDirectory.setText(newDir);
+			project.setWorkingCopyDir(str(newDir));
+			self.updateProjectWidgets();
+			
+	# Set working copy directory callback wrapper
+	def setWorkingCopyDir(self, value):
+		# flush back to project settings
+		project.setWorkingCopyDir(str(value));
+		
+		# TODO: auto-update branch url's?
 
 # -----------------------------------------
-	
+
 app = QApplication(sys.argv)
+
+if len(sys.argv) > 1:
+	project = DualitySettings(sys.argv[1]);
+else:
+	project = DualitySettings();
 
 mainWin = DualityWindow()
 mainWin.show()
