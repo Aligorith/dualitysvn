@@ -161,6 +161,8 @@ class DualitySettings:
 	# Instance Vars ===============================
 	__slots__ = (
 		'fileN',			# (str) name of file to use
+		
+		'autofile',			# (bool) whether this is an "automatically generated" filename
 		'unsaved',			# (bool) are there unsaved changes?
 		
 		'workingCopyDir',	# (str) directory of working copy
@@ -211,12 +213,19 @@ class DualitySettings:
 			# make and store
 			fileN = os.path.join(cwd, DualitySettings.DEFAULT_FILENAME);
 			self.fileN = fileN;
+			
+			# this is an 'automatically generated file' (which doesn't actually exist on disk yet!)
+			self.autofile = True;
 		
 		# return whether we now have a valid filename
 		return (fileN is not None);
 		
 	# Reset settings to default values
 	def resetDefaults(self):
+		# autofile cannot be on, if we're loading in real files after calling this...
+		self.autofile = False;
+		
+		# default = no changes :)
 		self.unsaved = False;
 		
 		# "src" dir living beside the project file
@@ -1439,6 +1448,20 @@ class DualityWindow(QWidget):
 					
 	# save project settings as-is
 	def saveProject(self):
+		# if file is "autofile", prompt user for where to save, so that it can be found again
+		# - cancel if user cancels without giving a name...
+		if project.autofile:
+			fileName = QFileDialog.getSaveFileName(self, 
+				"Save File", 
+				".", 
+				"Duality SVN Projects (*.duality)");
+			
+			if fileName:
+				project.fileN = fileName;
+			else:
+				print "No filename specified. Cancelling save"
+				return;
+			
 		# just save
 		project.save();
 	
