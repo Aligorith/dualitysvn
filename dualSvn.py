@@ -742,7 +742,8 @@ class SvnOperationDialog(QDialog):
 		gb.setLayout(grp);
 		
 		# 1a) progress log box
-		self.wStatus = SvnOperationList();
+		#self.wStatus = SvnOperationList(); # FIXME: restore this when it's completed
+		self.wStatus = QPlainTextEdit();
 		grp.addWidget(self.wStatus, 1,1); # r1 c1
 		
 		# 1b) progress bar?
@@ -770,7 +771,7 @@ class SvnOperationDialog(QDialog):
 		# attach callbacks
 		self.connect(self.process, SIGNAL("readyReadStandardOutput()"), self.readOutput);
 		self.connect(self.process, SIGNAL("readyReadStandardError()"), self.readErrors);
-		self.connect(self.process, SIGNAL("processExited()"), self.pexited);
+		self.connect(self.process, SIGNAL("finished(int, QProcess::ExitStatus)"), self.pEnded);
 		
 	# Methods ==========================================
 	
@@ -781,9 +782,23 @@ class SvnOperationDialog(QDialog):
 	def addArgs(self, args):
 		self.args += args;
 		
-	# Working directory and environment settings
-	def setupEnv(self, env):
-		pass;
+	# Setup process environment, modifying only the aspects that are non-null
+	# < wdir: (str) working directory to execute commands in
+	def setupEnv(self, wdir=None, branch2=None):
+		# working directory?
+		if wdir is not None:
+			self.process.setWorkingDirectory(wdir);
+
+		# ...............
+		
+		# setup process environment
+		env = QProcessEnvironment.systemEnvironment();
+		self.process.setProcessEnvironment(env); # assume that we can set this first
+		
+		# standard or secondary branch?
+		if branch2 is not None:
+			# only need to define this var with any value...
+			env.insert(SVN_HACK_ENVVAR, "1");
 		
 	# Start running the svn operation
 	def go(self):
@@ -820,11 +835,13 @@ class SvnOperationDialog(QDialog):
 	
 	def readOutput(self):
 		line = str(self.process.readLine()).rstrip("\n");
-		self.wStatus.appendFromStr(line);
+		#self.wStatus.appendFromStr(line); # TMP for later...
+		self.wStatus.appendPlainText(line);
 	
 	def readErrors(self):
 		#self.wStatus.appendFromStr("Error: " + QString(self.process.readStderr()));
-		pass;
+		line = str(self.process.readLine()).rstrip("\n"); # ERR...
+		self.wStatus.appendPlainText(line + " <StdEr>");
 		
 	# Buttons ------------------------------------------
 	
@@ -836,18 +853,27 @@ class SvnOperationDialog(QDialog):
 		
 		# now, cancel the dialog using it's own version
 		super(SvnOperationDialog, self).reject();
-		
+	
 	# callback called when svn operation process ends
-	def pexited(self):
+	def pEnded(self, exitCode, exitStatus):
+		# grab 3 more lines - to grab the last bits of info (status info)
+		self.readOutput();
+		self.readOutput();
+		self.readOutput();
+		
 		# if exited with some problem, make sure we warn
 		# TODO: set own status codes...?
-		if self.process.exitStatus() == QProcess.CrashExit:
+		if exitStatus == QProcess.CrashExit:
 			QMessageBox.warning(self,
 				"SVN Error",
 				"%s operation was not completed successfully" % (self.opName));
+			self.status = SvnOperationDialog.STATUS_FAILED;
+		else:
+			self.status = SvnOperationDialog.STATUS_DONE;
 		
 		# enable the "done" button now, and disable cancel (not much we can do)
 		self.wOk.setEnabled(True);
+		self.setName();
 	
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	
@@ -1136,7 +1162,24 @@ class BranchPane(QWidget):
 	# Working Copy Import ----------------------------------------------------
 	
 	def svnUpdate(self):
-		self.unimplementedFeatureCb("Update");
+		# setup svn action dialog
+		dlg = SvnOperationDialog(self, "Update");
+		
+		# setup arguments for svn
+		args  = [];
+		args += ["--accept", "postpone"]; # conflict res should be manually handled by user afterwards?
+		args += ["up"]; # the all critical command!
+		dlg.addArgs(args);
+		
+		# setup working environment
+		# TODO: this stuff is relatively standard, so should probably be abstracted...
+			# only use "_svn" set when this is "reference" trunk (i.e. working copy belongs to 2 masters now)
+		useSecondaryBranch = (self.branchType == BranchPane.TYPE_TRUNK_REF); 
+		dlg.setupEnv(project.workingCopyDir, useSecondaryBranch);
+		
+		# let it run now
+		dlg.go();
+		dlg.exec_();
 	
 	def svnApplyPatch(self):
 		self.unimplementedFeatureCb("Apply Patch");		
@@ -1243,9 +1286,8 @@ class BranchPane(QWidget):
 			self.noDataSelectedCb("Commit");
 			return;
 		
-		# create commit dialog 
-		branchName = "<branchName>" # FIXME
-		dlg = SvnCommitDialog(self, branchName, files);
+		# create commit dialog
+		dlg = SvnCommitDialog(self, self.wUrl.text(), files);
 		
 		# process user response, and commit if allowed
 		reply = dlg.exec_();
