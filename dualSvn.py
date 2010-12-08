@@ -1165,6 +1165,20 @@ class BranchPane(QWidget):
 			feature,
 			"Feature not yet implemented")
 	
+	# Project Updates -------------------------------------------------------
+	
+	# update all widgets associated with project
+	def updateProjectWidgets(self):
+		# update url
+		if self.branchType == BranchPane.TYPE_BRANCH:
+			self.wUrl.setText(project.urlBranch);
+		else:
+			self.wUrl.setText(project.urlTrunk);
+			
+		# clear status list
+		self.wStatusView.model.clearAll(); # TODO: make this general?
+		self.updateActionWidgets();
+	
 	# Working Copy Import ----------------------------------------------------
 	
 	def svnUpdate(self):
@@ -1334,6 +1348,9 @@ class BranchPane(QWidget):
 			# cleanup temp files
 			os.remove(logFile);
 			os.remove(tarFile);
+			
+			# now schedule update to status list
+			self.svnRefreshStatus();
 		else:
 			print "Commit cancelled..."
 		
@@ -1383,6 +1400,7 @@ class DualityWindow(QWidget):
 		
 		# contents
 		self.setupUI();
+		self.updateProjectWidgets();
 	
 	# main widget init
 	def setupUI(self):
@@ -1468,8 +1486,8 @@ class DualityWindow(QWidget):
 		self.wDirectory.setText(project.workingCopyDir);
 		
 		# branches
-		# XXX: careful! may also need to validate other stuff
-		self.pBranch1.wUrl.setText(project.urlTrunk);
+		self.pBranch1.updateProjectWidgets();
+		
 	
 	# Project Settings -----------------------------------
 	
