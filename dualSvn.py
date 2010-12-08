@@ -1077,12 +1077,16 @@ class BranchPane(QWidget):
 		
 		# 2a) update from repository 
 		self.wUpdate = QPushButton("SVN Update");
+		self.wUpdate.setToolTip("Fetch and apply recent changes made to the repository to working copy");
 		self.wUpdate.clicked.connect(self.svnUpdate);
+		
 		gbox.addWidget(self.wUpdate, 1,1); # r1 c1
 		
 		# 2b) apply patch
 		self.wApplyPatch = QPushButton("Apply Patch");
+		self.wApplyPatch.setToolTip("Apply changes described in patch file to working copy");
 		self.wApplyPatch.clicked.connect(self.svnApplyPatch);
+		
 		gbox.addWidget(self.wApplyPatch, 2,1); # r2 c1
 		
 		# space ................
@@ -1097,13 +1101,17 @@ class BranchPane(QWidget):
 		
 		# 3.1b) "toggle all" button
 		self.wToggleAllStatus = QPushButton("Toggle All");
+		self.wToggleAllStatus.setToolTip("Toggle whether all or none or the paths are included for editing (shown by checked status)");
 		self.wToggleAllStatus.clicked.connect(self.statusToggleAll);
+		
 		gbox.addWidget(self.wToggleAllStatus, 1,3); # r1 c3
 		
 		# 3.1c) "refresh" button
 		# FIXME: need icons...
 		self.wRefreshStatus = QPushButton(QIcon.fromTheme("view-refresh"), "Refresh"); 
+		self.wRefreshStatus.setToolTip("Refresh the list of paths shown in the list and their current versioning status");
 		self.wRefreshStatus.clicked.connect(self.svnRefreshStatus);
+		
 		gbox.addWidget(self.wRefreshStatus, 1,4); # r1 c4
 		
 		# 3.2) status list
@@ -1120,19 +1128,25 @@ class BranchPane(QWidget):
 		
 		# 4a) add
 		self.wAdd = QPushButton("Add");
+		self.wAdd.setToolTip("Mark selected paths for addition to repository during a future commit");
 		self.wAdd.clicked.connect(self.svnAdd);
+		
 		gbox.addWidget(self.wAdd, 1,1); # r1 c1
 		
 		# 4b) delete
 		self.wDelete = QPushButton("Delete");
+		self.wDelete.setToolTip("Mark selected paths for deletion during a future commit");
 		self.wDelete.clicked.connect(self.svnDelete);
+		
 		gbox.addWidget(self.wDelete, 1,2); # r1 c2
 		
 		# ...................
 		
 		# 5) Revert
 		self.wRevert = QPushButton("Revert");
+		self.wRevert.setToolTip("Undo changes to selected paths made in local copy");
 		self.wRevert.clicked.connect(self.svnRevert);
+		
 		self.layout.addWidget(self.wRevert);
 		
 		# ...................
@@ -1144,15 +1158,19 @@ class BranchPane(QWidget):
 		
 		# 6a) Create Patch
 		self.wCreatePatch = QPushButton("Create Patch");
+		self.wCreatePatch.setToolTip("Create a file containing a summary of the changes made to the selected paths");
 		self.wCreatePatch.clicked.connect(self.svnCreatePatch);
+		
 		gbox.addWidget(self.wCreatePatch, 1,1); # r1 c1
 		
 		# 6b) Commit
 		if self.branchType == BranchPane.TYPE_TRUNK_REF:
 			self.wCommit = QPushButton("Reintegrate Branch Changes");
+			self.wCommit.setToolTip("Apply all changes made in branch back to trunk (from which it was originally branched from)");
 			self.wCommit.clicked.connect(self.svnReintegrate);
 		else:
 			self.wCommit = QPushButton("Commit");
+			self.wCommit.setToolTip("Send selected changes in working copy to repository");
 			self.wCommit.clicked.connect(self.svnCommit);
 		gbox.addWidget(self.wCommit, 2,1); # r2 c1
 		
