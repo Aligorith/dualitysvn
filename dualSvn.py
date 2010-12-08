@@ -1505,7 +1505,7 @@ class DualityWindow(QMainWindow):
 		if project.autofile:
 			self.setWindowTitle("Duality SVN");
 		else:
-			self.setWindowTitle('%s - Duality SVN' % project.fileN);
+			self.setWindowTitle('%s - Duality SVN' % os.path.split(project.fileN)[1]);
 		
 		# directory
 		self.wDirectory.setText(project.workingCopyDir);
@@ -1609,10 +1609,11 @@ class DualityWindow(QMainWindow):
 			
 	# Set working copy directory callback wrapper
 	def setWorkingCopyDir(self, value):
-		# flush back to project settings
-		project.setWorkingCopyDir(str(value));
-		
-		# TODO: auto-update branch url's?
+		# flush back to project settings, but only if different
+		if project.workingCopyDir != str(value):
+			project.setWorkingCopyDir(str(value));
+		else:
+			print "wc paths same"
 		
 	# System Info ---------------------------------------
 	
