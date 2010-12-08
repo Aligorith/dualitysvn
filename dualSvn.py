@@ -64,11 +64,6 @@ def OSU_branch2Enable(on=True):
 	else:
 		if HACKVAR in os.environ:
 			del os.environ[SVN_HACK_ENVVAR];
-			
-# Status updates...
-# TODO: this only works for console version for now
-def status(str):
-	print str;
 
 # --------------------------------
 # Utility Methods
@@ -128,25 +123,6 @@ def createBranch(srcdir, target, branchName):
 	#status("Switching Working Copy to New Branch...");
 	cmd = 'svn switch %s' % (target)
 	OSU_runCommand(cmd);
-
-# Update working copy
-# < srcdir: (str) directory where working copy is located
-# < fromBranch2: (bool) should changes be pulled from secondary branch (i.e. "trunk")
-def updateWorkingCopy(srcdir, fromBranch2):
-	# switch branch?
-	OSU_branch2Enable(fromBranch2);
-	
-	# perform updates
-	cmd = 'svn up'
-	OSU_runCommand(cmd); # FIXME: need to get output of this one!
-	
-	# switch back branches - always off, just in case
-	OSU_branch2Enable(false);
-	
-# Perform a svn commit
-def commitChanges(filesList, logMessage):
-	# add all files in the files list to a new "changeset"
-	pass;
 
 ###########################################
 # Settings Container
