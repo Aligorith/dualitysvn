@@ -1169,12 +1169,17 @@ class BranchPane(QWidget):
 	
 	# update all widgets associated with project
 	def updateProjectWidgets(self):
-		# update url
+		# update url, and set editability status (only editable for standard trunk)
 		if self.branchType == BranchPane.TYPE_BRANCH:
 			self.wUrl.setText(project.urlBranch);
+			self.wUrl.setReadOnly(True);
+		elif self.branchType == BranchPane.TYPE_TRUNK_REF:
+			self.wUrl.setText(project.urlTrunk);
+			self.wUrl.setReadOnly(True);
 		else:
 			self.wUrl.setText(project.urlTrunk);
-			
+			self.wUrl.setReadOnly(False);
+		
 		# clear status list
 		self.wStatusView.model.clearAll(); # TODO: make this general?
 		self.updateActionWidgets();
