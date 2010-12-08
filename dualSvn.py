@@ -171,6 +171,9 @@ class DualitySettings:
 	def verifyLoadFile(self, fileN, addIfInvalid=False):
 		# validate provided string (if available), falling back on the default string
 		if fileN:
+			# make sure it is a string before verifying
+			fileN = str(fileN);
+			
 			if os.path.exists(fileN):
 				# save filename and try to load stored settings
 				self.fileN = fileN;
@@ -1610,6 +1613,7 @@ class DualityWindow(QMainWindow):
 		# if unsaved, prompt about that first
 		if self.promptSave() == False:
 			# abort if didn't manage to save first
+			print "prompt save failed"
 			return;
 		
 		# get new filename
