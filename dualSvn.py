@@ -777,6 +777,11 @@ class SvnOperationDialog(QDialog):
 	
 	# External Setup API ------------------------------
 	
+	# Set the svn operation that needs to be performed
+	# < svnOpName: (str) name of the operation (i.e. commit,up,etc.) to perform using svn
+	def setOp(self, svnOpName):
+		self.svnOp = svnOpName;
+	
 	# Add a list of arguments to be passed to svn when running it
 	# args: (list<str>) list of arguments to run
 	def addArgs(self, args):
@@ -784,11 +789,10 @@ class SvnOperationDialog(QDialog):
 		
 	# Setup process environment, modifying only the aspects that are non-null
 	# < wdir: (str) working directory to execute commands in
-	def setupEnv(self, wdir=None, branch2=None):
+	def setupEnv(self, branchType):
 		# working directory?
-		if wdir is not None:
-			self.process.setWorkingDirectory(wdir);
-
+		self.process.setWorkingDirectory(project.workingCopyDir);
+		
 		# ...............
 		
 		# setup process environment
@@ -796,8 +800,11 @@ class SvnOperationDialog(QDialog):
 		self.process.setProcessEnvironment(env); # assume that we can set this first
 		
 		# standard or secondary branch?
-		if branch2 is not None:
-			# only need to define this var with any value...
+		# only use "_svn" set when this is "reference" trunk (i.e. working copy belongs to 2 masters now)
+		# TODO: move this define up somewhere else?
+		useSecondaryBranch = (branchType == BranchPane.TYPE_TRUNK_REF); 
+		
+		if useSecondaryBranch:
 			env.insert(SVN_HACK_ENVVAR, "1");
 		
 	# Start running the svn operation
@@ -821,7 +828,7 @@ class SvnOperationDialog(QDialog):
 	
 	def startProcess(self):
 		# try and start the process now
-		self.process.start("svn", self.args);
+		self.process.start("svn", [self.svnOp]+self.args);
 		
 		if self.process.state() == QProcess.NotRunning:
 			# msgbox warning about error
@@ -977,20 +984,19 @@ class SvnCommitDialog(QDialog):
 		# open file for writing
 		if fileN == None:
 			fileN = SvnCommitDialog.LOG_FILENAME;
-		f = open(fileN, "w");
-		
-		# grab the log message and split into paragraphs (by line breaks)
-		logLines = self.getLogMessage().split("\n");
-		
-		# perform word wrapping on each of these paragraphs before writing
-		# so that the email clients can read this nicely
-		for paragraph in logLines:
-			lines = SvnCommitDialog.wordWrapper.wrap(paragraph);
-			for line in lines:
-				f.write("%s\n" % line);
-		
-		# finish up
-		f.close();
+		with open(fileN, "w") as f:
+			# grab the log message and split into paragraphs (by line breaks)
+			logLines = str(self.getLogMessage()).split("\n");
+			
+			# perform word wrapping on each of these paragraphs before writing
+			# so that the email clients can read this nicely
+			for paragraph in logLines:
+				lines = SvnCommitDialog.wordWrapper.wrap(paragraph);
+				for line in lines:
+					f.write("%s\n" % line);
+			
+			# finish up
+			f.close();
 		return fileN;
 
 # -----------------------------------------
@@ -1164,18 +1170,11 @@ class BranchPane(QWidget):
 	def svnUpdate(self):
 		# setup svn action dialog
 		dlg = SvnOperationDialog(self, "Update");
+		dlg.setupEnv(self.branchType);
+		dlg.setOp("up");
 		
 		# setup arguments for svn
-		args  = [];
-		args += ["--accept", "postpone"]; # conflict res should be manually handled by user afterwards?
-		args += ["up"]; # the all critical command!
-		dlg.addArgs(args);
-		
-		# setup working environment
-		# TODO: this stuff is relatively standard, so should probably be abstracted...
-			# only use "_svn" set when this is "reference" trunk (i.e. working copy belongs to 2 masters now)
-		useSecondaryBranch = (self.branchType == BranchPane.TYPE_TRUNK_REF); 
-		dlg.setupEnv(project.workingCopyDir, useSecondaryBranch);
+		dlg.addArgs(["--accept", "postpone"]); # conflict res should be manually handled by user afterwards?
 		
 		# let it run now
 		dlg.go();
@@ -1238,8 +1237,25 @@ class BranchPane(QWidget):
 			"No paths selected for %s operation.\nEnable some of the checkboxes beside paths in the Status list and try again." % (feature))
 	
 	# get list of items to operate on
+	# > return: (list<SvnStatusListItem>)
 	def statusListGetOperatable(self):
 		return self.wStatusView.getOperationList();
+		
+	# save given list of items' paths to a file to pass to the svn operation
+	# < files: (list<SvnStatusListItem>) list of files to perform operation on
+	# > return[0]: (str) name of file where these paths were saved to
+	def saveStatusListPathsFile(self, files):
+		# open hardcoded path
+		TARGETS_FILENAME = "duality_targets.oplist"; # FIXME: move out of this function
+		
+		# write (full) paths only to file
+		# XXX: do we need full paths here?
+		with open(TARGETS_FILENAME, 'w') as f:
+			for item in files:
+				f.write(item.path + '\n');
+		
+		# return the filename
+		return TARGETS_FILENAME;
 	
 	# ...........
 	
@@ -1279,6 +1295,10 @@ class BranchPane(QWidget):
 		
 		self.unimplementedFeatureCb("Create Patch");
 		
+	# perform SVN Commit
+	# TODO: 
+	#	- have a special prepass which performs svn add for missing files...
+	# 	- directory read/write permissions issues...
 	def svnCommit(self):
 		# get list of files to change
 		files = self.statusListGetOperatable();
@@ -1293,17 +1313,27 @@ class BranchPane(QWidget):
 		reply = dlg.exec_();
 		
 		if reply == QDialog.Accepted:
-			# retrieve log message
-			# FIXME: temp testing code...
-			print "Log message obtained:"
-			print dlg.getLogMessage(); # FIXME: make convert this to save file op...
-			print "Proceeding to commit!"
+			# retrieve log message, and save it to a temp file
+			logFile = dlg.saveLogMessage();
 			
-			# bring up svn action dialog, and perform actual commit
+			# dump names of files to commit to another temp file
+			tarFile = self.saveStatusListPathsFile(files);
+			
+			# create commit dialog, and prepare it for work
 			dlg2 = SvnOperationDialog(self, "Commit");
-			# TODO: setup commands for commit action
+			dlg2.setupEnv(self.branchType);
+			dlg2.setOp("commit");
 			
+			dlg2.addArgs(['--targets', tarFile]); # list of files to commit
+			dlg2.addArgs(['--force-log', '-F', logFile]); # log message - must have one...
+			
+			# run dialog and perform operation
+			dlg2.go();
 			dlg2.exec_();
+			
+			# cleanup temp files
+			os.remove(logFile);
+			os.remove(tarFile);
 		else:
 			print "Commit cancelled..."
 		
