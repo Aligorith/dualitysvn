@@ -719,7 +719,7 @@ class SvnOperationDialog(QDialog):
 		
 		# 1a) progress log box
 		#self.wStatus = SvnOperationList(); # FIXME: restore this when it's completed
-		self.wStatus = QPlainTextEdit();
+		self.wStatus = QPlainTextEdit("");
 		grp.addWidget(self.wStatus, 1,1); # r1 c1
 		
 		# 1b) progress bar?
@@ -822,9 +822,13 @@ class SvnOperationDialog(QDialog):
 		self.wStatus.appendPlainText(line);
 	
 	def readErrors(self):
-		#self.wStatus.appendFromStr("Error: " + QString(self.process.readStderr()));
-		line = str(self.process.readLine()).rstrip("\n"); # ERR...
-		self.wStatus.appendPlainText(line + " <StdEr>");
+		# switch to stderr channel to read, then switch back
+		self.process.setReadChannel(QProcess.StandardError);
+		
+		line = str(self.process.readLine()).rstrip("\n");
+		self.wStatus.appendPlainText("<ERROR>: " + line);
+		
+		self.process.setReadChannel(QProcess.StandardOutput);
 		
 	# Buttons ------------------------------------------
 	
@@ -975,6 +979,7 @@ class SvnCommitDialog(QDialog):
 		# open file for writing
 		if fileN == None:
 			fileN = SvnCommitDialog.LOG_FILENAME;
+			
 		with open(fileN, "w") as f:
 			# grab the log message and split into paragraphs (by line breaks)
 			logLines = str(self.getLogMessage()).split("\n");
@@ -988,7 +993,10 @@ class SvnCommitDialog(QDialog):
 			
 			# finish up
 			f.close();
-		return fileN;
+		
+		# return full path name
+		# FIXME: the directory where this gets dumped should be user defined
+		return os.path.join(os.getcwd(), fileN);
 
 # -----------------------------------------
 # Branch Panes
@@ -1264,6 +1272,10 @@ class BranchPane(QWidget):
 			feature+" Error",
 			"No paths selected for %s operation.\nEnable some of the checkboxes beside paths in the Status list and try again." % (feature))
 	
+	# ...........
+	
+	# TODO: abstract these functions to a special list type for these...
+	
 	# get list of items to operate on
 	# > return: (list<SvnStatusListItem>)
 	def statusListGetOperatable(self):
@@ -1282,8 +1294,9 @@ class BranchPane(QWidget):
 			for item in files:
 				f.write(item.path + '\n');
 		
-		# return the filename
-		return TARGETS_FILENAME;
+		# return the full filename
+		# FIXME: the directory where this gets dumped should be user defined
+		return os.path.join(os.getcwd(), TARGETS_FILENAME);
 	
 	# ...........
 	
@@ -1312,7 +1325,25 @@ class BranchPane(QWidget):
 			self.noDataSelectedCb("Revert");
 			return;
 		
-		self.unimplementedFeatureCb("Revert");
+		# filter list of files to not include externals or unversioned
+		# TODO...
+		
+		# dump names of files to commit to another temp file
+		tarFile = self.saveStatusListPathsFile(files);
+		
+		# create commit dialog, and prepare it for work
+		dlg = SvnOperationDialog(self, "Revert");
+		dlg.setupEnv(self.branchType);
+		dlg.setOp("revert");
+		
+		dlg.addArgs(['--targets', tarFile]); # list of files to revert
+		
+		# run dialog and perform operation
+		dlg.go();
+		dlg.exec_();
+		
+		# cleanup temp files
+		os.remove(tarFile);
 	
 	def svnCreatePatch(self):
 		# get list of files to change
