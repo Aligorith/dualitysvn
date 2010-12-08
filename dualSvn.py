@@ -869,6 +869,9 @@ class SvnCommitDialog(QDialog):
 	# Output filename for temp log file
 	LOG_FILENAME = "commitlog.duality.txt"
 	
+	# Minimum amount of "content" (as num of chars) in log message to be ok
+	MIN_LOG_LEN = 3;
+	
 	# Word-Wrap
 	wordWrapper = textwrap.TextWrapper();
 	
@@ -896,6 +899,8 @@ class SvnCommitDialog(QDialog):
 		
 		self.setupUI(branchName, filesList);
 		
+		self.validateMessageLength();
+		
 	# main widget init
 	def setupUI(self, branchName, filesList):
 		# 1) "staged" files
@@ -908,9 +913,9 @@ class SvnCommitDialog(QDialog):
 		# 1a) branch target
 		grp.addWidget(QLabel("For: " + branchName));
 		
-		# 2a) list of files - not editable
-		# FIXME: maybe we just need another status list!
+		# 1b) list of files - not editable
 		self.wFileList = SvnStatusList(filesList);
+		self.wFileList.setFocusPolicy(Qt.NoFocus); # otherwise, log mesage doesn't get focus
 		grp.addWidget(self.wFileList);
 		
 		# .............................
@@ -926,8 +931,8 @@ class SvnCommitDialog(QDialog):
 		# TODO...
 		
 		# 2b) log message box
-		self.wLog = QTextEdit("");
-		self.wLog.setAcceptRichText(False);
+		self.wLog = QPlainTextEdit("");	
+		self.wLog.textChanged.connect(self.validateMessageLength);
 		grp.addWidget(self.wLog);
 		
 		# ..............................
@@ -944,6 +949,16 @@ class SvnCommitDialog(QDialog):
 		# 3b) cancel 
 		self.wCancel = grp.addButton(QDialogButtonBox.Cancel);
 		self.wCancel.clicked.connect(self.reject);
+		
+	# Callbacks ===========================================
+	
+	# validate length of commit log to prevent entering bogus commit logs
+	def validateMessageLength(self):
+		# get log message, and strip off all whitespace
+		bareMessage = str(self.getLogMessage()).strip();
+		
+		# only if there is content, may we continue...
+		self.wCommit.setEnabled(len(bareMessage) >= SvnCommitDialog.MIN_LOG_LEN);
 		
 	# Methods ============================================
 	
