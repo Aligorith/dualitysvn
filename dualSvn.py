@@ -381,6 +381,58 @@ class SvnStatusListItem:
 
 # ......................
 
+# A list of SvnStatusListItem's - subclass of list
+class SvnStatusListDatalist(list):
+	# Class Defines =========================================
+	# Name of file to output own data to
+	TARGETS_FILENAME = "duality_targets.oplist"; # FIXME: move out of this function
+	
+	# List Ops ==============================================
+	
+	# make a copy of self
+	def copy(self):
+		nList = SvnStatusListDatalist();
+		nList[:] = self[:];
+		
+		return nList;
+	
+	# populate from given list
+	# ! makes a copy of the new list's contents
+	def replaceAll(self, newList):
+		self[:] = newList[:];
+	
+	# clear list
+	def clearAll(self):
+		self[:] = [];
+	
+	# Special Ops ============================================
+	
+	# filter the items in the list, using the given predicate function
+	# < cb: (fn(SvnStatusListItem)) predicate function to apply
+	# > return[0]: (SvnStatusListDatalist) a new list with the unwanted items filtered out 
+	def filter(self, cb):
+		nList = SvnStatusListDatalist();
+		
+		for item in self:
+			if cb(item):
+				nList.append(item);
+		
+		return nList;
+	
+	# save our items' paths to a file to pass to an svn operation
+	# > return[0]: (str) name of file where these paths were saved to
+	def savePathsFile(self):
+		# write (full) paths only to file
+		with open(SvnStatusListDatalist.TARGETS_FILENAME, 'w') as f:
+			for item in self:
+				f.write(item.path + '\n');
+		
+		# return the full filename
+		# FIXME: the directory where this gets dumped should be user defined
+		return os.path.join(os.getcwd(), SvnStatusListDatalist.TARGETS_FILENAME);
+
+# ......................
+
 # Qt wrapper for SvnStatusListItem, which represents one "row" in the list
 # TODO: implement support for hiding some items temporarily...
 class SvnStatusListItemModel(QAbstractItemModel):
@@ -391,7 +443,7 @@ class SvnStatusListItemModel(QAbstractItemModel):
 	# Setup =================================================
 	
 	# ctor
-	# < (listItems): (list<SvnStatusListItem>) list of SvnStatusListItem's for populating as a filtered copy of another instance.
+	# < (listItems): (SvnStatusListDatalist) list of SvnStatusListItem's for populating as a filtered copy of another instance.
 	#	! Checkboxes will not be available when such a list is supplied, as further editing isn't needed.
 	def __init__(self, listItems=None, parent=None):
 		super(SvnStatusListItemModel, self).__init__(parent);
@@ -400,8 +452,8 @@ class SvnStatusListItemModel(QAbstractItemModel):
 		if listItems:
 			self.listItems = listItems;
 		else:
-			self.listItems = [];
-		self.checked = [];
+			self.listItems = SvnStatusListDatalist();
+		self.checked = SvnStatusListDatalist();
 		
 		# checkboxes will only be shown if we're not being supplied with
 		# a list to simply display again (in another place)
@@ -432,8 +484,8 @@ class SvnStatusListItemModel(QAbstractItemModel):
 		self.beginRemoveRows(QModelIndex(), 0, totLen);
 		
 		# clear lists
-		self.listItems = [];
-		self.checked = [];
+		self.listItems.clearAll();
+		self.checked.clearAll();
 		
 		# done
 		self.endRemoveRows();
@@ -444,10 +496,10 @@ class SvnStatusListItemModel(QAbstractItemModel):
 		
 		if len(self.checked):
 			# deselect all
-			self.checked = [];
+			self.checked.clearAll();
 		else:
 			# select all
-			self.checked = self.listItems[:];
+			self.checked.replaceAll(self.listItems);
 			
 		self.endResetModel();
 	
@@ -545,6 +597,7 @@ class SvnStatusListItemModel(QAbstractItemModel):
 				}
 				
 				# find the right one that matches for this item
+				# FIXME: a bimap would solve this easily...
 				for shortKey,longKey in SvnStatusListItem.FileStatusMap.iteritems():
 					if longKey == item.file_status:
 						return colorMap[shortKey];
@@ -607,7 +660,7 @@ class SvnStatusListItemModel(QAbstractItemModel):
 		rev = (order == Qt.DescendingOrder);
 		
 		# sort the internal list
-		self.listItems = sorted(self.listItems, key=keyFuncs[col], reverse=rev); 
+		self.listItems.sort(key=keyFuncs[col], reverse=rev); 
 
 # ......................
 
@@ -617,7 +670,7 @@ class SvnStatusList(QTreeView):
 	# Setup =============================================
 	
 	# ctor
-	# < fileList: (list<SvnStatusListItem>) list of items to populate model with
+	# < fileList: (SvnStatusListDatalist) list of items to populate model with
 	def __init__(self, fileList=None):
 		super(SvnStatusList, self).__init__();
 		
@@ -675,7 +728,7 @@ class SvnStatusList(QTreeView):
 	# Get list of selected items to operate on
 	def getOperationList(self):
 		# just return a copy of the model's list...
-		return self.model.checked[:];
+		return self.model.checked.copy();
 
 # -----------------------------------------
 # Dialogs 
@@ -892,7 +945,7 @@ class SvnCommitDialog(QDialog):
 	# ctor
 	# < parent: (QWidget) window that owns this dialog
 	# < (branchName): (str) string representing the name or URL of the branch changes are getting committed to
-	# < (filesList): (list<SvnStatusListItem>) list of files that will be involved in the commit
+	# < (filesList): (SvnStatusListDatalist) list of files that will be involved in the commit
 	def __init__(self, parent, branchName, filesList):
 		super(SvnCommitDialog, self).__init__(parent);
 		
@@ -1072,7 +1125,6 @@ class BranchPane(QWidget):
 		
 		# 1.2) directory field
 		self.wUrl = QLineEdit("https://svnroot/my-branch");
-		self.wUrl.setReadOnly(True); # XXX: should not be editable, but we need to grab this from somewhere...
 		self.wUrl.setToolTip("URL pointing to where the branch is stored in the SVN repository");
 		
 		gbox.addWidget(self.wUrl, 1,2); # r1 c2
@@ -1212,7 +1264,7 @@ class BranchPane(QWidget):
 			self.wUrl.setReadOnly(False);
 		
 		# clear status list
-		self.wStatusView.model.clearAll(); # TODO: make this general?
+		self.wStatusView.model.clearAll();
 		self.updateActionWidgets();
 	
 	# Working Copy Import ----------------------------------------------------
@@ -1288,29 +1340,10 @@ class BranchPane(QWidget):
 	
 	# ...........
 	
-	# TODO: abstract these functions to a special list type for these...
-	
 	# get list of items to operate on
-	# > return: (list<SvnStatusListItem>)
+	# > return: (SvnStatusListDatalist)
 	def statusListGetOperatable(self):
 		return self.wStatusView.getOperationList();
-		
-	# save given list of items' paths to a file to pass to the svn operation
-	# < files: (list<SvnStatusListItem>) list of files to perform operation on
-	# > return[0]: (str) name of file where these paths were saved to
-	def saveStatusListPathsFile(self, files):
-		# open hardcoded path
-		TARGETS_FILENAME = "duality_targets.oplist"; # FIXME: move out of this function
-		
-		# write (full) paths only to file
-		# XXX: do we need full paths here?
-		with open(TARGETS_FILENAME, 'w') as f:
-			for item in files:
-				f.write(item.path + '\n');
-		
-		# return the full filename
-		# FIXME: the directory where this gets dumped should be user defined
-		return os.path.join(os.getcwd(), TARGETS_FILENAME);
 	
 	# ...........
 	
@@ -1343,7 +1376,7 @@ class BranchPane(QWidget):
 		# TODO...
 		
 		# dump names of files to commit to another temp file
-		tarFile = self.saveStatusListPathsFile(files);
+		tarFile = files.savePathsFile();
 		
 		# create commit dialog, and prepare it for work
 		dlg = SvnOperationDialog(self, "Revert");
@@ -1390,7 +1423,7 @@ class BranchPane(QWidget):
 			logFile = dlg.saveLogMessage();
 			
 			# dump names of files to commit to another temp file
-			tarFile = self.saveStatusListPathsFile(files);
+			tarFile = files.savePathsFile();
 			
 			# create commit dialog, and prepare it for work
 			dlg2 = SvnOperationDialog(self, "Commit");
