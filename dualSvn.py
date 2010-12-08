@@ -1377,7 +1377,7 @@ class BranchPane(QWidget):
 # Main Window
 
 # Main Window
-class DualityWindow(QWidget):
+class DualityWindow(QMainWindow):
 	# Class Defines ==================================
 	
 	# Instance Vars ==================================
@@ -1398,20 +1398,31 @@ class DualityWindow(QWidget):
 	# ctor
 	def __init__(self, parent=None):
 		# toplevel 'widget' (i.e. window) - no parent
-		QWidget.__init__(self, parent);
+		super(DualityWindow, self).__init__(parent);
 		
 		# main window settings
 		self.setWindowTitle('Duality SVN');
 		
+		# register "actions"
+		self.setupActions();
+		
 		# contents
 		self.setupUI();
+		self.setupMenus();
+		
 		self.updateProjectWidgets();
 	
 	# main widget init
 	def setupUI(self):
+		# dummy widget for MainWindow container
+		dw = QWidget();
+		self.setCentralWidget(dw);
+		
 		# main layout container
 		self.layout = QVBoxLayout();
-		self.setLayout(self.layout);
+		dw.setLayout(self.layout);
+		
+		# ..........
 		
 		# 1) working copy panel
 		self.setupWorkingCopyPanel();
@@ -1428,58 +1439,61 @@ class DualityWindow(QWidget):
 		
 	# setup working copy panel
 	def setupWorkingCopyPanel(self):
-		# 0) group box
-		gb = QGroupBox("Project Settings");
-		self.layout.addWidget(gb);
-		
-		vbox = QVBoxLayout();
-		gb.setLayout(vbox);
-		
-		# ...........
-		
-		# 1) "Project"
-		# FIXME: this is ugly!
+		# 1) "directory"
 		gbox = QGridLayout();
-		vbox.addLayout(gbox);
+		self.layout.addLayout(gbox);
 		
-		# 1.1) Project label
-		gbox.addWidget(QLabel("Settings:"), 1,1); # r1 c1
-		
-		# 1.2) Project file
-		self.wProjectFile = QLineEdit(project.fileN);
-		gbox.addWidget(self.wProjectFile, 1,2); # r1 c2
-		
-		# 1.3) Load Project
-		self.wLoadProject = QPushButton("Load");
-		self.wLoadProject.clicked.connect(self.loadProject);
-		gbox.addWidget(self.wLoadProject, 1,3); # r1 c3
-		
-		# 1.4) Save Project
-		self.wSaveProject = QPushButton("Save");
-		self.wSaveProject.clicked.connect(self.saveProject);
-		gbox.addWidget(self.wSaveProject, 1,4); # r1 c4
-		
-		# ...........
-		
-		# 2) "directory"
-		gbox = QGridLayout();
-		vbox.addLayout(gbox);
-		
-		# 2.1) directory label
+		# 1.1) directory label
 		gbox.addWidget(QLabel("Working Copy:"), 1,1); # r1 c1
 		
-		# 2.2) directory field
+		# 1.2) directory field
 		self.wDirectory = QLineEdit(project.workingCopyDir);
 		self.wDirectory.setToolTip("Directory where working copy is located");
 		self.wDirectory.textChanged.connect(self.setWorkingCopyDir);
 		
 		gbox.addWidget(self.wDirectory, 1,2); # r1 c2
 		
-		# 2.2) browse-button for directory widget
+		# 1.2) browse-button for directory widget
 		self.wDirBrowseBut = QPushButton("Browse...");
 		self.wDirBrowseBut.clicked.connect(self.dirBrowseCb);
 		
 		gbox.addWidget(self.wDirBrowseBut, 1,3); # r1 c3
+		
+	# register "actions" - i.e. operators 
+	def setupActions(self):
+		# project settings ----------------------
+		self.aNewProject = QAction("&New Project", 
+			self, shortcut="Ctrl+N", triggered=self.newProject);
+		
+		self.aLoadProject = QAction("&Open Project",
+			self, shortcut="Ctrl+O", triggered=self.loadProject);
+			
+		self.aSaveProject = QAction("&Save Project",
+			self, shortcut="Ctrl+S", triggered=self.saveProject);
+		
+		# system ---------------------------------
+		self.aExit = QAction("E&xit", 
+			self, shortcut="Ctrl+Q", triggered=self.close);
+			
+		# help
+		self.aAbout = QAction("&About",
+			self, shortcut="F12", triggered=self.aboutInfo);
+	
+	# setup menu system
+	def setupMenus(self):
+		# 1) file menu
+		self.mFileMenu = self.menuBar().addMenu("&File");
+		self.mFileMenu.addAction(self.aNewProject);
+		self.mFileMenu.addAction(self.aLoadProject);
+		self.mFileMenu.addAction(self.aSaveProject);
+		
+		self.mFileMenu.addSeparator();
+		
+		self.mFileMenu.addAction(self.aExit);
+		
+		# 3) help menu
+		self.mHelpMenu = self.menuBar().addMenu("&Help");
+		self.mHelpMenu.addAction(self.aAbout);
 
 	# Callbacks ========================================== 
 	
@@ -1487,6 +1501,12 @@ class DualityWindow(QWidget):
 	
 	# update widgets after altering project settings
 	def updateProjectWidgets(self):
+		# update titlebar
+		if project.autofile:
+			self.setWindowTitle("Duality SVN");
+		else:
+			self.setWindowTitle('%s - Duality SVN' % project.fileN);
+		
 		# directory
 		self.wDirectory.setText(project.workingCopyDir);
 		
@@ -1499,6 +1519,7 @@ class DualityWindow(QWidget):
 	# prompt for saving unsaved file
 	def promptSave(self):
 		# get outta here if nothing needs doing
+		# FIXME: this is almost always outdated!
 		if project.unsaved == False:
 			return True;
 			
@@ -1518,6 +1539,17 @@ class DualityWindow(QWidget):
 		else:
 			# cannot proceed
 			return False;
+	
+	# create new project
+	def newProject(self):
+		# if unsaved, prompt about that first
+		if self.promptSave() == False:
+			# abort if didn't manage to save first
+			return;
+			
+		# create a new project, then flush updates
+		project.verifyLoadFile(None, True);
+		self.updateProjectWidgets();
 	
 	# load new project
 	def loadProject(self):
@@ -1581,6 +1613,13 @@ class DualityWindow(QWidget):
 		project.setWorkingCopyDir(str(value));
 		
 		# TODO: auto-update branch url's?
+		
+	# System Info ---------------------------------------
+	
+	# about box
+	def aboutInfo(self):
+		QMessageBox.about(self, "About Duality SVN",
+			"A SVN Client which makes standard branch management fast and easy!")
 
 # -----------------------------------------
 
