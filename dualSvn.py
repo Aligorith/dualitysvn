@@ -1052,6 +1052,14 @@ class BranchPane(QWidget):
 		
 	# main widget init
 	def setupUI(self):
+		# -) little util defines
+		
+		# -.1) font
+		bfont = QFont();
+		bfont.setWeight(QFont.Bold);
+		
+		# ``````````````````
+		
 		# 1) url widget
 		gbox = QGridLayout();
 		self.layout.addLayout(gbox);
@@ -1077,6 +1085,7 @@ class BranchPane(QWidget):
 		# 2a) update from repository 
 		self.wUpdate = QPushButton("SVN Update");
 		self.wUpdate.setToolTip("Fetch and apply recent changes made to the repository to working copy");
+		self.wUpdate.setFont(bfont);
 		self.wUpdate.clicked.connect(self.svnUpdate);
 		
 		gbox.addWidget(self.wUpdate, 1,1); # r1 c1
@@ -1109,6 +1118,7 @@ class BranchPane(QWidget):
 		# FIXME: need icons...
 		self.wRefreshStatus = QPushButton(QIcon.fromTheme("view-refresh"), "Refresh"); 
 		self.wRefreshStatus.setToolTip("Refresh the list of paths shown in the list and their current versioning status");
+		self.wRefreshStatus.setFont(bfont);
 		self.wRefreshStatus.clicked.connect(self.svnRefreshStatus);
 		
 		gbox.addWidget(self.wRefreshStatus, 1,4); # r1 c4
@@ -1170,6 +1180,7 @@ class BranchPane(QWidget):
 		else:
 			self.wCommit = QPushButton("Commit");
 			self.wCommit.setToolTip("Send selected changes in working copy to repository");
+			self.wCommit.setFont(bfont);
 			self.wCommit.clicked.connect(self.svnCommit);
 		gbox.addWidget(self.wCommit, 2,1); # r2 c1
 		
@@ -1518,6 +1529,8 @@ class DualityWindow(QMainWindow):
 		# help
 		self.aAbout = QAction("&About",
 			self, shortcut="F12", triggered=self.aboutInfo);
+		self.aAboutQt = QAction("About Qt",
+			self, triggered=QApplication.aboutQt);
 	
 	# setup menu system
 	def setupMenus(self):
@@ -1534,6 +1547,7 @@ class DualityWindow(QMainWindow):
 		# 3) help menu
 		self.mHelpMenu = self.menuBar().addMenu("&Help");
 		self.mHelpMenu.addAction(self.aAbout);
+		self.mHelpMenu.addAction(self.aAboutQt);
 
 	# Callbacks ========================================== 
 	
