@@ -1,3 +1,3 @@
 @REM Duality SVN Launcher Script
 
-pythonw dualSvn.py
+pythonw dualSvn.py %*
