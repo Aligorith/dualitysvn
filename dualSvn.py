@@ -350,8 +350,8 @@ class SvnStatusListItem:
 	def fromString(self, initStr):
 		try:
 			# chop into 2 parts: status and path
-			statusStr = initStr[:7]; # first 7 columns 
-			self.path = initStr[8:]; # rest of string after status columns
+			statusStr = initStr[:7]; 		 # first 7 columns 
+			self.path = initStr[8:].strip(); # rest of string after status columns
 			
 			# decipher status string
 				# col 1: file status
@@ -490,6 +490,15 @@ class SvnStatusListItemModel(QAbstractItemModel):
 		# done
 		self.endRemoveRows();
 		
+	# get the item associated with the given index
+	# < index: (QModelIndex) cell id wrapper
+	# > return[0]: (SvnStatusListItem) item at this index (corresponding to row only)
+	def getItem(self, index):
+		if index.isValid():
+			return self.listItems[index.row()];
+		else:
+			return None;
+		
 	# toggle select/deselect all
 	def toggleAllChecked(self):
 		self.beginResetModel();
@@ -543,7 +552,7 @@ class SvnStatusListItemModel(QAbstractItemModel):
 	# get QtCore.Qt.ItemFlags
 	def flags(self, index):
 		if not index.isValid():
-			return QtCore.Qt.NoItemFlags
+			return Qt.NoItemFlags
 		
 		# at very least, items can be selected
 		flags = Qt.ItemIsEnabled | Qt.ItemIsSelectable;
@@ -564,7 +573,7 @@ class SvnStatusListItemModel(QAbstractItemModel):
 			return None;
 		
 		# get item
-		item = self.listItems[index.row()];
+		item = self.getItem(index);
 		
 		# what data to return
 		if role == Qt.DisplayRole:
@@ -679,8 +688,11 @@ class SvnStatusList(QTreeView):
 		self.setAlternatingRowColors(True);
 		self.setUniformRowHeights(True);
 		
-		# prevent crashes on double-clicking
+		# double-click remapping
+		# - first line disables default "expand" behaviour, which causes crashes
+		# - second line hooks up event catcher to implement new dbl-click behaviour 
 		self.setExpandsOnDoubleClick(False);
+		self.connect(self, SIGNAL("doubleClicked(QModelIndex)"), self.dblClickHandler);
 		
 		# allow sorting - by the file status by default
 		self.setSortingEnabled(True);
@@ -695,12 +707,32 @@ class SvnStatusList(QTreeView):
 		
 		#self.header().setResizeMode(0, QHeaderView.Stretch); # <--- enables nice layout
 		#self.header().setResizeMode(0, QHeaderView.Interactive); # <--- needed for user tweaking though!
+	
+	# Callbacks =========================================
+	
+	# double-click event handler -> get diff for file
+	# < index: (QModelIndex) the index of the item double-clicked on
+	def dblClickHandler(self, index):
+		print "double-click caught - ", index.row(), index.column()
 		
+		# grab the item involved, then launch diff-viewer...
+		item = self.model.getItem(index);
+		if item:
+			# run svn diff operation
+			# TODO: it might be better for performance to use QProcess to gradually update stuff...
+			args = ["svn", "diff", "--non-interactive", str(item.path)];
+			p = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=project.workingCopyDir);
+			
+			# show the log in some viewer dialog
+			# FIXME: need to create a proper dialog instead of using msgbox as fill-in
+			dlg = QMessageBox();
+			dlg.setText(p.stdout.read());
+			dlg.exec_();
+	
 	# Methods ===========================================
 	
 	# Refresh the status list - hook for UI command
-	# < wcDir: (str) working copy directory
-	def refreshList(self, wcDir):
+	def refreshList(self):
 		print "Refreshing..."
 		
 		# clear lists first
@@ -708,8 +740,8 @@ class SvnStatusList(QTreeView):
 		
 		# run svn status operation
 		# TODO: it might be better for performance to use QProcess to gradually update stuff...
-		args = ["svn", "--non-interactive", "--ignore-externals", "status"];
-		p = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=wcDir);
+		args = ["svn", "status", "--non-interactive", "--ignore-externals"];
+		p = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=project.workingCopyDir);
 		
 		for line in p.stdout:
 			# strip off newline character first
@@ -1293,7 +1325,8 @@ class BranchPane(QWidget):
 	# refresh status list
 	def svnRefreshStatus(self):
 		# call refresh on list
-		self.wStatusView.refreshList(project.workingCopyDir);
+		# TODO: move this up to here so that status list update can be cancelled?
+		self.wStatusView.refreshList();
 		
 		# update widgets...
 		self.updateActionWidgets();
