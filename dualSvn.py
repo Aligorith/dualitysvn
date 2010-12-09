@@ -1043,9 +1043,12 @@ class SvnCommitDialog(QDialog):
 			# perform word wrapping on each of these paragraphs before writing
 			# so that the email clients can read this nicely
 			for paragraph in logLines:
-				lines = SvnCommitDialog.wordWrapper.wrap(paragraph);
-				for line in lines:
-					f.write("%s\n" % line);
+				if len(paragraph):
+					lines = SvnCommitDialog.wordWrapper.wrap(paragraph);
+					for line in lines:
+						f.write("%s\n" % line);
+				else:
+					f.write('\n');
 			
 			# finish up
 			f.close();
