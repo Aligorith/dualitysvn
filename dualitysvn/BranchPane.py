@@ -13,7 +13,7 @@ class BranchPane(QWidget):
 	# Instance Settings ====================================================
 	__slots__ = (
 		# Model .......................................................
-		'branchType',		# (int) type of the branch (BracnType.TYPE_*)
+		'branchType',		# (int) type of the branch (BranchType.TYPE_*)
 		
 		# General Layout Stuff ........................................
 		'layout',			# (QLayout) layout manager for widget
