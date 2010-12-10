@@ -146,3 +146,4 @@ class SvnCommitDialog(QDialog):
 		# FIXME: the directory where this gets dumped should be user defined
 		return os.path.join(os.getcwd(), fileN);
 	
+#########################################

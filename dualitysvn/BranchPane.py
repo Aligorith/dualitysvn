@@ -302,7 +302,30 @@ class BranchPane(QWidget):
 			self.noDataSelectedCb("Add");
 			return;
 		
-		self.unimplementedFeatureCb("Add");
+		# filter list of files to only include unversioned
+		files = files.getFiltered(lambda x: x.file_status == SvnStatusListItem.FileStatusMap['?']);
+		
+		# dump names of files to commit to another temp file
+		tarFile = files.savePathsFile();
+		
+		# create operation dialog, and prepare it for work
+		# TODO: should we do this for both branches at once?
+		dlg = SvnOperationDialog(self, "Add");
+		dlg.setupEnv(self.branchType);
+		dlg.setOp("add");
+		
+		dlg.addArgs(['--targets', tarFile]); # list of files to add
+		dlg.addArgs(['--auto-props']); # automatically set svn-properties on files based on status
+		
+		# run dialog and perform operation
+		dlg.go();
+		dlg.exec_();
+		
+		# cleanup temp files
+		os.remove(tarFile);
+		
+		# now schedule update to status list
+		self.svnRefreshStatus();
 		
 	def svnDelete(self):
 		# get list of files to change
@@ -311,7 +334,36 @@ class BranchPane(QWidget):
 			self.noDataSelectedCb("Delete");
 			return;
 		
-		self.unimplementedFeatureCb("Delete");
+		# filter list of files to only include added, conflicted, modified, replaced, or missing
+		def filterPredicate(item):
+			for k in ('A', 'C', 'M', 'R', '!'):	
+				if self.file_status == SvnStatusListItem.FileStatusMap[k]:
+					return True;
+			else:
+				return False;
+		files = files.getFiltered(filterPredicate);
+		
+		# dump names of files to commit to another temp file
+		tarFile = files.savePathsFile();
+		
+		# create operation dialog, and prepare it for work
+		# TODO: should we do this for both branches at once?
+		dlg = SvnOperationDialog(self, "Delete");
+		dlg.setupEnv(self.branchType);
+		dlg.setOp("del");
+		
+		dlg.addArgs(['--targets', tarFile]); # list of files to delete
+		#dlg.addArgs(['--keep-local']); # don't delete working copy's copy (TODO: enable this when branched so that we can do the other branch next)
+		
+		# run dialog and perform operation
+		dlg.go();
+		dlg.exec_();
+		
+		# cleanup temp files
+		os.remove(tarFile);
+		
+		# now schedule update to status list
+		self.svnRefreshStatus();
 		
 	def svnRevert(self):
 		# get list of files to change
@@ -326,7 +378,7 @@ class BranchPane(QWidget):
 		# dump names of files to commit to another temp file
 		tarFile = files.savePathsFile();
 		
-		# create commit dialog, and prepare it for work
+		# create operation dialog, and prepare it for work
 		dlg = SvnOperationDialog(self, "Revert");
 		dlg.setupEnv(self.branchType);
 		dlg.setOp("revert");
@@ -339,6 +391,9 @@ class BranchPane(QWidget):
 		
 		# cleanup temp files
 		os.remove(tarFile);
+		
+		# now schedule update to status list
+		self.svnRefreshStatus();
 	
 	def svnCreatePatch(self):
 		# get list of files to change

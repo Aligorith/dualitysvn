@@ -114,9 +114,9 @@ class SvnStatusListDatalist(list):
 	# Special Ops ============================================
 	
 	# filter the items in the list, using the given predicate function
-	# < cb: (fn(SvnStatusListItem)) predicate function to apply
+	# < cb: (fn(SvnStatusListItem)=bool) predicate function to apply
 	# > return[0]: (SvnStatusListDatalist) a new list with the unwanted items filtered out 
-	def filter(self, cb):
+	def getFiltered(self, cb):
 		nList = SvnStatusListDatalist();
 		
 		for item in self:
