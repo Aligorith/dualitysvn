@@ -13,7 +13,7 @@ class BranchPane(QWidget):
 	# Instance Settings ====================================================
 	__slots__ = (
 		# Model .......................................................
-		'branchType',		# (int) type of the branch (BranchPane.TYPE_*)
+		'branchType',		# (int) type of the branch (BracnType.TYPE_*)
 		
 		# General Layout Stuff ........................................
 		'layout',			# (QLayout) layout manager for widget
@@ -24,7 +24,7 @@ class BranchPane(QWidget):
 		'wApplyPatch',  	# (QPushButton) apply patch
 		
 		'wRefreshStatus',  	# (QPushButton) refresh status of 'status' box
-		'wStatusView',		# list view
+		'wStatusView',		# (SvnStatusList) list view
 		
 		'wAdd',				# (QPushButton) svn add
 		'wDelete',			# (QPushButton) svn delete
@@ -34,6 +34,9 @@ class BranchPane(QWidget):
 		'wCreatePatch',		# (QPushButton) create patch (i.e. svn diff)
 		
 		'wCommit',			# (QPushButton) svn commit - to main branch
+		
+		# Refresh Stuff ................................................
+		'refreshProcess',	# (QProcess) process used to refresh the status list - only defined while in use
 	);
 	
 	# Setup ================================================================
@@ -44,6 +47,8 @@ class BranchPane(QWidget):
 		
 		# setup internal settings
 		self.branchType = branchType;
+		
+		self.refreshProcess = None;
 		
 		# setup layout manager
 		self.layout = QVBoxLayout();
@@ -119,11 +124,20 @@ class BranchPane(QWidget):
 		# 3.1c) "refresh" button
 		# FIXME: need icons...
 		self.wRefreshStatus = QPushButton(QIcon.fromTheme("view-refresh"), "Refresh"); 
-		self.wRefreshStatus.setToolTip("Refresh the list of paths shown in the list and their current versioning status");
+		self.wRefreshStatus.setToolTip("Refresh the list of paths shown and their current versioning status");
 		self.wRefreshStatus.setFont(bfont);
 		self.wRefreshStatus.clicked.connect(self.svnRefreshStatus);
 		
+		self.wRefreshStatus.setVisible(True);
 		gbox.addWidget(self.wRefreshStatus, 1,4); # r1 c4
+		
+		# 3.1c2) "stop refresh" button - only visible when needed
+		self.wStopRefreshStatus = QPushButton("Stop");
+		self.wStopRefreshStatus.setToolTip("Stop refreshing the status list");
+		self.wStopRefreshStatus.clicked.connect(self.stopRefreshStatus);
+		
+		self.wStopRefreshStatus.setVisible(False);
+		gbox.addWidget(self.wStopRefreshStatus, 1,4); # r1 c4
 		
 		# 3.2) status list
 		self.wStatusView = SvnStatusList();
@@ -231,27 +245,9 @@ class BranchPane(QWidget):
 	
 	def svnApplyPatch(self):
 		self.unimplementedFeatureCb("Apply Patch");		
-	
+		
 	# Status List Ops ---------------------------------------------------------
 	
-	# refresh status list
-	def svnRefreshStatus(self):
-		# call refresh on list
-		# TODO: move this up to here so that status list update can be cancelled?
-		self.wStatusView.refreshList();
-		
-		# update widgets...
-		self.updateActionWidgets();
-		
-	# toggle selected items
-	def statusToggleAll(self):
-		# call toggle on list model
-		# TODO: should status view provide a wrapper for this?
-		self.wStatusView.model.toggleAllChecked();
-		
-		# update widgets
-		self.updateActionWidgets();
-		
 	# update action widgets in response to svn status list changes
 	def updateActionWidgets(self):
 		# get selection list from status list
@@ -277,6 +273,114 @@ class BranchPane(QWidget):
 		# toggle button should only be active if the status list is populated
 		self.wToggleAllStatus.setEnabled(self.wStatusView.model.rowCount(None) != 0);
 	
+	# toggle selected items
+	def statusToggleAll(self):
+		# call toggle on list model
+		# TODO: should status view provide a wrapper for this?
+		self.wStatusView.model.toggleAllChecked();
+		
+		# update widgets
+		self.updateActionWidgets();
+	
+	# Status List Refresh ---------------------------------------------------------
+	
+	# refresh status list
+	def svnRefreshStatus(self):
+		# call refresh on list
+		# TODO: move this up to here so that status list update can be cancelled?
+		#self.wStatusView.refreshList();
+		
+		# update widgets...
+		#self.updateActionWidgets();
+		
+		#return; # XXX ------------------------------- end of old
+		
+		# this is just an alias for the start of the refresh process
+		self.startRefreshStatus();
+	
+	# ..................
+	
+	# refresh launcher
+	def startRefreshStatus(self):
+		# clear list's model
+		self.wStatusView.model.clearAll();
+		
+		# tweak the buttons shown
+		self.wRefreshStatus.setVisible(False);
+		self.wStopRefreshStatus.setVisible(True);
+		
+		self.updateActionWidgets(); # do this too, as we could be here quite a while...
+		
+		# setup up process that performs the reading
+		self.refreshProcess = QProcess();
+		
+		self.connect(self.refreshProcess, SIGNAL("readyReadStandardOutput()"), self.readRefreshStatusInfo);
+		self.connect(self.refreshProcess, SIGNAL("finished(int, QProcess::ExitStatus)"), self.endedRefreshStatus);
+		
+		# setup stuff from SvnOperationDialog.setupEnv()
+		# TODO: incorporate all this into an abstraction...
+		self.refreshProcess.setWorkingDirectory(project.workingCopyDir);
+		
+		env = QProcessEnvironment.systemEnvironment();
+		self.refreshProcess.setProcessEnvironment(env); # assume that we can set this first
+		
+		useSecondaryBranch = (self.branchType == BranchType.TYPE_TRUNK_REF); 
+		if useSecondaryBranch:
+			env.insert(SVN_HACK_ENVVAR, "1");
+		
+		# start the process
+		args = ["status"]; # the command
+		args += ["--non-interactive", "--ignore-externals"]; # options for background stuff
+		
+		self.refreshProcess.start("svn", args);
+		
+	# cleanup after refresh status is done
+	def doneRefreshStatus(self):
+		# tweak the buttons shown - restore original state
+		self.wRefreshStatus.setVisible(True);
+		self.wStopRefreshStatus.setVisible(False);
+		
+		self.updateActionWidgets();
+	
+	# stop refresh status list
+	def stopRefreshStatus(self):
+		# kill process - only way to get rid of console apps on windows
+		self.refreshProcess.kill();
+		
+		# cleanup
+		self.doneRefreshStatus();
+		
+	# read refresh-status process output line
+	def readRefreshStatusInfo(self):
+		# read in line, and chop off newline
+		line = str(self.refreshProcess.readLine()).rstrip("\n");
+		
+		# parse the output to create a new line, and add to model
+		if len(line):
+			item = SvnStatusListItem(line);
+			self.wStatusView.model.add(item);
+		
+	# callback called when refresh operation finishes
+	def endedRefreshStatus(self, exitCode, exitStatus):
+		# grab a few more lines - to grab the last bits of info (status info)
+		self.readRefreshStatusInfo();
+		self.readRefreshStatusInfo();
+		self.readRefreshStatusInfo();
+		self.readRefreshStatusInfo();
+		self.readRefreshStatusInfo();
+		
+		# if exited with some problem, make sure we warn
+		# TODO: set own status codes...?
+		if exitStatus == QProcess.CrashExit:
+			QMessageBox.warning(self,
+				"SVN Error",
+				"Refresh Status operation was not completed successfully");
+		
+		# hack: force sorting to be performed again now
+		self.wStatusView.setSortingEnabled(True);
+		
+		# cleanup
+		self.doneRefreshStatus();
 	
 	# Status List Dependent --------------------------------------------------
 	
