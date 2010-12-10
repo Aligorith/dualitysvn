@@ -1,4 +1,4 @@
 @REM Duality SVN Launcher Script
+@ECHO off
 
-@REM pythonw dualSvn.py %*
-python dualSvn.py %*
+@START pythonw dualSvn.py %*
