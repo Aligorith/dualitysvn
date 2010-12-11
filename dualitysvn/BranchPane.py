@@ -362,12 +362,9 @@ class BranchPane(QWidget):
 		
 	# callback called when refresh operation finishes
 	def endedRefreshStatus(self, exitCode, exitStatus):
-		# grab a few more lines - to grab the last bits of info (status info)
-		self.readRefreshStatusInfo();
-		self.readRefreshStatusInfo();
-		self.readRefreshStatusInfo();
-		self.readRefreshStatusInfo();
-		self.readRefreshStatusInfo();
+		# grab rest of output
+		while self.refreshProcess.canReadLine():
+			self.readRefreshStatusInfo();
 		
 		# if exited with some problem, make sure we warn
 		# TODO: set own status codes...?

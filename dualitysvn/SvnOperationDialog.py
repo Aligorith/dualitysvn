@@ -190,10 +190,9 @@ class SvnOperationDialog(QDialog):
 	
 	# callback called when svn operation process ends
 	def pEnded(self, exitCode, exitStatus):
-		# grab 3 more lines - to grab the last bits of info (status info)
-		self.readOutput();
-		self.readOutput();
-		self.readOutput();
+		# grab rest of output
+		while self.process.canReadLine():
+			self.readOutput();
 		
 		# if exited with some problem, make sure we warn
 		# TODO: set own status codes...?
