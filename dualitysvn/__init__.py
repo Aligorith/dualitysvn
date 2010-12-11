@@ -10,6 +10,8 @@ from coreDefines import *
 
 # import everything into here just to make things easier
 # FIXME: make proper use of namespaces...
+from SvnOperationProcess import *
+
 from SvnStatusList import *
 
 from SvnOperationDialog import *
