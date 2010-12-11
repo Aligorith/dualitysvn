@@ -32,11 +32,11 @@ class SvnOperationProcess:
 		'args',		# (list<str>) list of argument strings to use
 		
 		# Callbacks -----------------------
-		'handleOutputCb',	# (fn(parent, target, model, str)) handle line of output from process, for adding to model/target widget as needed
-		'handleErrorCb',	# (fn(parent, target, model, str)) handle line of error output from process
+		'handleOutputCb',	# (fn(SvnOperationProcess, line:str)) handle line of output from process, for adding to model/target widget as needed
+		'handleErrorCb',	# (fn(SvnOperationProcess, line:str)) handle line of error output from process
 		
-		'preStartCb',		# (fn(parent, target, model)) operation to perform before starting process
-		'postEndCb'			# (fn(parent, target, model)) operation to perform after process finished
+		'preStartCb',		# (fn(SvnOperationProcess)) operation to perform before starting process
+		'postEndCb'			# (fn(SvnOperationProcess)) operation to perform after process finished
 	);
 	
 	# Internal Setup ==============================
@@ -57,7 +57,7 @@ class SvnOperationProcess:
 		self.svnOp = "";
 		self.args = [];
 		
-		# null-define the callbacks
+		# null-define the callbacks that users can bind
 		self.handleOutputCb = None;
 		self.handleErrorCb = None;
 		
@@ -134,7 +134,7 @@ class SvnOperationProcess:
 	def startProcess(self):
 		# perform pre-start operation
 		if self.preStartCb:
-			self.preStartCb(self.parent, self.wTarget, self.model);
+			self.preStartCb(self);
 		
 		# try and start the process now
 		self.process.start("svn", [self.svnOp]+self.args);
@@ -173,7 +173,7 @@ class SvnOperationProcess:
 		
 		# output
 		if self.handleOutputCb:
-			self.handleOutputCb(self.parent, self.wTarget, self.model, line);
+			self.handleOutputCb(self, line);
 		else:
 			print "StdOut>>", line
 	
@@ -185,7 +185,7 @@ class SvnOperationProcess:
 		line = str(self.process.readLine()).rstrip("\n");
 		
 		if self.handleErrorCb:
-			self.handleErrorCb(self.parent, self.wTarget, self.model, line);
+			self.handleErrorCb(self, line);
 		else:
 			print "StdErr>>", line
 		
@@ -208,7 +208,7 @@ class SvnOperationProcess:
 				
 		# run cleanup callback
 		if self.postEndCb:
-			self.postEndCb(self.parent, self.wTarget, self.model);
+			self.postEndCb(self);
 		
 	# callback called when svn operation process ends
 	def processEnded(self, exitCode, exitStatus):

@@ -302,29 +302,29 @@ class BranchPane(QWidget):
 		
 		# setup callbacks
 		#	pre-start ..................
-		def setup(par, tar, model):
+		def setup(sop):
 			# start fresh
-			model.clearAll();
+			sop.model.clearAll();
 			
 			# we could be here a while
-			par.updateActionWidgets(); 
+			sop.parent.updateActionWidgets(); 
 		rp.preStartCb = setup;
 		
 		# 	done .......................
-		def done(par, tar, model):
+		def done(sop):
 			# hack: force sorting to be performed again now
-			tar.setSortingEnabled(True);
+			sop.wTarget.setSortingEnabled(True);
 			
 			# update with new status
-			par.updateActionWidgets();
+			sop.parent.updateActionWidgets();
 		rp.postEndCb = done;
 		
 		# 	get items..................
-		def store(par, tar, model, line):
+		def store(sop, line):
 			# parse the output to create a new line, and add to model
 			if len(line):
 				item = SvnStatusListItem(line);
-				model.add(item);
+				sop.model.add(item);
 		rp.handleOutputCb = store;
 		
 		# go!
