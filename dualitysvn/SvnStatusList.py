@@ -421,8 +421,6 @@ class SvnStatusList(QTreeView):
 	# double-click event handler -> get diff for file
 	# < index: (QModelIndex) the index of the item double-clicked on
 	def dblClickHandler(self, index):
-		print "double-click caught - ", index.row(), index.column()
-		
 		# grab the item involved, then launch diff-viewer...
 		item = self.model.getItem(index);
 		if item:
@@ -439,32 +437,6 @@ class SvnStatusList(QTreeView):
 	
 	# Methods ===========================================
 	
-	# Refresh the status list - hook for UI command
-	def refreshList(self):
-		print "Refreshing..."
-		
-		# clear lists first
-		self.model.clearAll();
-		
-		# run svn status operation
-		# TODO: it might be better for performance to use QProcess to gradually update stuff...
-		args = ["svn", "status", "--non-interactive", "--ignore-externals"];
-		p = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=project.workingCopyDir);
-		
-		for line in p.stdout:
-			# strip off newline character first
-			line = line.rstrip("\n");
-			
-			# process line
-			if len(line):
-				# parse the output to create a new line
-				item = SvnStatusListItem(line);
-				print "created new item - %s, %s, '%s' - from '%s'" % (item.file_status, item.prop_status, item.path, line);
-				self.model.add(item);
-				
-		# hack: force sorting to be performed again now
-		self.setSortingEnabled(True);
-		
 	# Get list of selected items to operate on
 	def getOperationList(self):
 		# just return a copy of the model's list...

@@ -286,15 +286,6 @@ class BranchPane(QWidget):
 	
 	# refresh status list
 	def svnRefreshStatus(self):
-		# call refresh on list
-		# TODO: move this up to here so that status list update can be cancelled?
-		#self.wStatusView.refreshList();
-		
-		# update widgets...
-		#self.updateActionWidgets();
-		
-		#return; # XXX ------------------------------- end of old
-		
 		# this is just an alias for the start of the refresh process
 		self.startRefreshStatus();
 	
