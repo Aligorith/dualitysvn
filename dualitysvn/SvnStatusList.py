@@ -5,6 +5,8 @@
 
 from coreDefines import *
 
+from DiffViewer import *
+
 #########################################
 # List Item Datatypes
 
@@ -461,10 +463,9 @@ class SvnStatusList(QTreeView):
 			p = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=project.workingCopyDir);
 			
 			# show the log in some viewer dialog
-			# FIXME: need to create a proper dialog instead of using msgbox as fill-in
-			dlg = QMessageBox();
-			dlg.setText(p.stdout.read());
-			dlg.exec_();
+			diffView = DiffViewer(self);
+			diffView.displayDiff_fromString(p.stdout.read());
+			diffView.show();
 	
 	# Methods ===========================================
 	

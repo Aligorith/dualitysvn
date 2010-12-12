@@ -47,7 +47,7 @@ class SvnOperationProcess:
 		self.wStart = self.wEnd = None;
 		self.widgetVisibility = False;
 		
-		self.silentErrors = False;
+		self.silentErrors = False; # errors are shown as msgboxes
 		
 		self.wTarget = None;
 		self.model = None;
