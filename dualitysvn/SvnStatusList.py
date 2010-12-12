@@ -415,9 +415,6 @@ class SvnStatusList(QTreeView):
 		
 		# tweak column extents
 		self.setupColumnSizes();
-		
-		#self.header().setResizeMode(0, QHeaderView.Stretch); # <--- enables nice layout
-		#self.header().setResizeMode(0, QHeaderView.Interactive); # <--- needed for user tweaking though!
 	
 	# setup column sizes
 	def setupColumnSizes(self):
@@ -429,15 +426,28 @@ class SvnStatusList(QTreeView):
 		# TODO: make that the case when resizing happens!
 		head.setStretchLastSection(False);
 		
-		# first column - 1.75 units, to fill most of space
-		head.resizeSection(0, dColW*1.8);
-		
 		# rest of columns should be same width - 0.75 of normal only
 		hColW = dColW * 0.75;
 		head.resizeSection(1, hColW);
 		head.resizeSection(2, hColW);
+		
+		# make first column large by default
+		head.resizeSection(0, dColW * 1.75);
 	
-	# Callbacks =========================================
+	# Callbacks/Overrides =====================================
+	
+	# override resize event to make first column stretchy
+	def resizeEvent(self, event):
+		head = self.header();
+		
+		# make first column stretchy, so that it will be calculated
+		head.setResizeMode(0, QHeaderView.Stretch); # <-- make it fill space
+		
+		# do normal resize
+		super(SvnStatusList, self).resizeEvent(event);
+		
+		# now restore normal mode so that users can still edit
+		head.setResizeMode(0, QHeaderView.Interactive); # <-- make it editable again
 	
 	# double-click event handler -> get diff for file
 	# < index: (QModelIndex) the index of the item double-clicked on
