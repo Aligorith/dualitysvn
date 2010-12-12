@@ -396,6 +396,9 @@ class SvnStatusList(QTreeView):
 		self.setAlternatingRowColors(True);
 		self.setUniformRowHeights(True);
 		
+		# column sizes - first column widest, and the others should be less
+		
+		
 		# double-click remapping
 		# - first line disables default "expand" behaviour, which causes crashes
 		# - second line hooks up event catcher to implement new dbl-click behaviour 
@@ -410,11 +413,29 @@ class SvnStatusList(QTreeView):
 		self.model = SvnStatusListItemModel(fileList);
 		self.setModel(self.model);
 		
-		# tweak column extents - only first column should stretch
-		self.header().setStretchLastSection(False);
+		# tweak column extents
+		self.setupColumnSizes();
 		
 		#self.header().setResizeMode(0, QHeaderView.Stretch); # <--- enables nice layout
 		#self.header().setResizeMode(0, QHeaderView.Interactive); # <--- needed for user tweaking though!
+	
+	# setup column sizes
+	def setupColumnSizes(self):
+		# get relevant info
+		head = self.header();
+		dColW = head.defaultSectionSize();
+		
+		# disable stretching of last section - only first should stretch!
+		# TODO: make that the case when resizing happens!
+		head.setStretchLastSection(False);
+		
+		# first column - 1.75 units, to fill most of space
+		head.resizeSection(0, dColW*1.8);
+		
+		# rest of columns should be same width - 0.75 of normal only
+		hColW = dColW * 0.75;
+		head.resizeSection(1, hColW);
+		head.resizeSection(2, hColW);
 	
 	# Callbacks =========================================
 	
