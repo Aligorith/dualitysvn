@@ -172,6 +172,7 @@ class DualityWindow(QMainWindow):
 			if self.pCheckout is None:
 				self.pCheckout = CheckoutBranchPanel();
 			self.wTabs.addTab(self.pCheckout, "Setup Project");
+			self.wTabs.setTabToolTip(0, "Set up working copy sandbox for project");
 			
 			return;
 		
@@ -181,9 +182,11 @@ class DualityWindow(QMainWindow):
 		if project.urlBranch:
 			trunkType = BranchType.TYPE_TRUNK_REF;
 			trunkLabel = "[Trunk]";
+			toolTip = "<i>Secondary branch</i> - 'Trunk' from which development branch was branched from";
 		else:
 			trunkType = BranchType.TYPE_TRUNK;
 			trunkLabel = "Trunk";
+			toolTip = "<i>Primary branch</i> - Development in working copy directly corresponds to this branch (usually Trunk branch) in the repository";
 		
 		# create new or make sure type is up to date
 		if self.pTrunk is None:
@@ -195,6 +198,7 @@ class DualityWindow(QMainWindow):
 			
 		# hook up tab
 		self.wTabs.addTab(self.pTrunk, trunkLabel);
+		self.wTabs.setTabToolTip(1, toolTip);
 		
 		# branch .............................
 		
@@ -204,11 +208,13 @@ class DualityWindow(QMainWindow):
 			if self.pBranch is None:
 				self.pBranch = BranchPanel(BranchType.TYPE_BRANCH);
 			self.wTabs.addTab(self.pBranch, "Branch");
+			self.wTabs.setTabToolTip(2, "<i>Primary branch</i> - Development in working copy directly corresponds to this branch, which was branched from the Secondary (Trunk)");
 		else:
 			# branch doesn't exist, so show create branch pane
 			if self.pBranching is None:
 				self.pBranching = NewBranchPanel();
 			self.wTabs.addTab(self.pBranching, "+");
+			self.wTabs.setTabToolTip(2, "Create new branch from Primary branch");
 	
 	# Project Settings -----------------------------------
 	

@@ -84,6 +84,9 @@ copy of the current state of the repository.
 		
 		gbox.addWidget(self.wUrl, 1,2); # r1 c2
 		
+		# spacer ..................
+		self.layout.addSpacing(15);
+		
 		# ..................
 		
 		# 3) authenticiation crap
@@ -110,7 +113,7 @@ copy of the current state of the repository.
 		grp.addRow(QLabel("Password:"), self.wUsrPass);
 		
 		# spacer ..................
-		self.layout.addSpacing(15);
+		self.layout.addSpacing(30);
 		
 		# .........................
 		
@@ -123,7 +126,8 @@ copy of the current state of the repository.
 		self.layout.addWidget(self.wCheckout);
 		
 		# adjustable space
-		self.layout.addStretch();
+		#self.layout.addStretch();
+		self.layout.addSpacing(180); # needed to make padding to right size
 		
 	# Callbacks ====================================
 	
@@ -151,7 +155,9 @@ copy of the current state of the repository.
 	
 	# do the actual checkout
 	def svnCheckout(self):
-		pass;
+		QMessageBox.warning(self, 
+			"Checkout",
+			"Feature not yet implemented!");
 		
 		# prepare SVN process
 		
