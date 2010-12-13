@@ -42,7 +42,8 @@ class SvnOperationDialog(QDialog):
 		self.status = SvnOperationDialog.STATUS_WORKING;
 		
 		# default global args for process first
-		self.args = ['--non-interactive']; 
+		# NOTE: these common options rule out any error prompts that might otherwise come up
+		self.args = ['--non-interactive', '--trust-server-cert']; 
 		
 		# toplevel stuff
 		self.setupProcess();
