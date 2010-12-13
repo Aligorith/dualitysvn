@@ -160,6 +160,7 @@ class DualityWindow(QMainWindow):
 		self.updateVisibleBranches();
 		
 	# determine visible branches, updating as necessary
+	# TODO: need a way to signal destructive update - i.e. project changed!
 	def updateVisibleBranches(self):
 		# clear all tabs first
 		self.wTabs.clear();
@@ -190,6 +191,7 @@ class DualityWindow(QMainWindow):
 		else:
 			# change type and update as necessary
 			self.pTrunk.changeBranchType(trunkType);
+		self.pTrunk.updateProjectWidgets();
 			
 		# hook up tab
 		self.wTabs.addTab(self.pTrunk, trunkLabel);
