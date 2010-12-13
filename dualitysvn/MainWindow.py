@@ -83,6 +83,7 @@ class DualityWindow(QMainWindow):
 		gbox.addWidget(QLabel("Working Copy:"), 1,1); # r1 c1
 		
 		# 1.2) directory field
+		# TODO: setup red-highlight when directory doesn't exist!
 		if project.workingCopyDir:
 			self.wDirectory = QLineEdit(project.workingCopyDir);
 		else:
@@ -169,10 +170,16 @@ class DualityWindow(QMainWindow):
 		
 		# if trunk isn't set, then we only need the setup pane
 		if not project.urlTrunk:
+			# create panel if necessary
 			if self.pCheckout is None:
 				self.pCheckout = CheckoutBranchPanel();
+				
+			# hook up tab
 			self.wTabs.addTab(self.pCheckout, "Setup Project");
 			self.wTabs.setTabToolTip(0, "Set up working copy sandbox for project");
+			
+			# hook up setup done event
+			self.connect(self.pCheckout, SIGNAL('projectBranchesChanged()'), self.updateVisibleBranches);
 			
 			return;
 		

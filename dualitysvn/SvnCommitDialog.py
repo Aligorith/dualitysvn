@@ -91,7 +91,7 @@ class SvnCommitDialog(QDialog):
 		self.layout.addWidget(grp);
 		
 		# 3a) ok - aka "commit"
-		# TODO: needs validation of commit-log first...
+		# TODO: validation of currently non-commitable, but later ok files needs to be done...
 		self.wCommit = grp.addButton("Commit", QDialogButtonBox.AcceptRole);
 		self.wCommit.clicked.connect(self.accept);
 		

@@ -6,6 +6,8 @@
 # import all from "dualitysvn" package
 from . import *
 
+import linecache
+
 #########################################
 # New Branch Operations Panel
 
@@ -125,9 +127,26 @@ copy of the current state of the repository.
 		
 		self.layout.addWidget(self.wCheckout);
 		
-		# adjustable space
-		#self.layout.addStretch();
-		self.layout.addSpacing(180); # needed to make padding to right size
+		# spacer ..................
+		self.layout.addSpacing(40);
+		
+		
+		# `````````````````````````````````````````````
+		
+		# 5) "advanced options"
+		self.layout.addWidget(QLabel("Alternative Setup Options:"));
+		
+		# 5a) setup from existing checkout
+		self.wFromExisting = QPushButton("From Existing Checkout...");
+		self.wFromExisting.setToolTip("Attach Duality to existing SVN working copy checkout");
+		self.wFromExisting.setFont(bfont);
+		self.wFromExisting.clicked.connect(self.fromExisting);
+		
+		self.layout.addWidget(self.wFromExisting);
+		
+		# spacer ..................
+		self.layout.addSpacing(50); # pad out rest of space
+		
 		
 	# Callbacks ====================================
 	
@@ -162,5 +181,40 @@ copy of the current state of the repository.
 		# prepare SVN process
 		
 		# if successful, set project's new working copy + url settings
+		
+	# ...........................
+	
+	# setup from existing checkout
+	def fromExisting(self):
+		# verify that the "working directory" specified exists
+		if os.path.exists(project.workingCopyDir) == False:
+			QMessageBox.warning(self, 
+				"Setup from existing...", 
+				"Working Copy Directory does not exist");
+			return;
+			
+		# try to find an svn directory in there
+		if os.path.exists(os.path.join(project.workingCopyDir, ".svn")) == False:
+			QMessageBox.warning(self, 
+				"Setup from existing...", 
+				"This does not appear to be a valid SVN working copy.\n\nNo SVN Metadata was found in:\n"+project.workingCopyDir);
+			return;
+		
+		# grab URL
+		# - we could do this by running "svn info" and parsing that output, 
+		#   but it's easier to just parse the svn metadata directly...
+		metaInfoPath = os.path.join(project.workingCopyDir, ".svn", "entries");
+		
+		if os.path.exists(metaInfoPath):
+			# as of svn 1.6.3, the url is line 5 of this file
+			project.urlTrunk = linecache.getline(metaInfoPath, 5).rstrip();
+		else:
+			QMessageBox.critical(self,
+				"Setup from existing...",
+				"Couldn't find metadata we were looking for");
+			return;
+			
+		# send signal for updating branch tabs
+		self.emit(SIGNAL('projectBranchesChanged()'));
 
 #########################################
