@@ -306,6 +306,16 @@ class DualityWindow(QMainWindow):
 		
 		# just save
 		project.save();
+		
+	# override window close to prompt for saving
+	def closeEvent(self, event):
+		if self.promptSave():
+			# accept close event, and exit
+			# 	- file will already have been saved, as handled by promptSave()
+			event.accept();
+		else:
+			# don't quit yet
+			event.ignore();
 	
 	# Working Copy ---------------------------------------
 	
