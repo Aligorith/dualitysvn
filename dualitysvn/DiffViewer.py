@@ -14,6 +14,9 @@ from coreDefines import *
 class DiffWidget(QTextBrowser):
 	def __init__(self, parent):
 		super(DiffWidget, self).__init__(parent);
+		
+		# set tab width - 4 cw's please!
+		self.setTabStopWidth(self.cursorWidth()*4*5);
 
 
 #########################################
