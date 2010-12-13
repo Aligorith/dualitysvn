@@ -88,10 +88,10 @@ class DualitySettings:
 		self.unsaved = False;
 		
 		# "src" dir living beside the project file
-		self.workingCopyDir = "./src";		
+		self.workingCopyDir = os.getcwd();		
 		
 		# example url - represents most common situations...
-		self.urlTrunk = "https://svnroot/project/trunk";
+		self.urlTrunk = None;
 		
 		# no branches by default!
 		self.urlBranch = None; 

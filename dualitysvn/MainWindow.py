@@ -6,6 +6,7 @@
 from coreDefines import *
 
 from BranchPane import *
+from NewBranchPane import *
 
 #########################################
 
@@ -22,8 +23,6 @@ class DualityWindow(QMainWindow):
 		'wDirBrowseBut',
 		
 		'wTabs',
-		
-		'branchTabs',
 	);
 	
 	# Setup ========================================== 
@@ -63,13 +62,16 @@ class DualityWindow(QMainWindow):
 		# ..........
 		
 		# 2) tab panel
+		# TODO: should the various tabs only be created if/when they're needed instead?
 		self.wTabs = QTabWidget();
 		self.layout.addWidget(self.wTabs);
 		
-		# 2a) first branch
-		# FIXME: this should be added automatically instead...
-		self.pBranch1 = BranchPane(BranchType.TYPE_TRUNK);
-		self.wTabs.addTab(self.pBranch1, "Trunk");
+		# prepare the tab panels first
+		self.pCheckout = None; # checkout repository for new project
+		self.pBranching = None; # create branch of trunk
+		
+		self.pTrunk = None; # trunk panel
+		self.pBranch = None; # branch panel
 		
 	# setup working copy panel
 	def setupWorkingCopyPanel(self):
@@ -81,8 +83,12 @@ class DualityWindow(QMainWindow):
 		gbox.addWidget(QLabel("Working Copy:"), 1,1); # r1 c1
 		
 		# 1.2) directory field
-		self.wDirectory = QLineEdit(project.workingCopyDir);
+		if project.workingCopyDir:
+			self.wDirectory = QLineEdit(project.workingCopyDir);
+		else:
+			self.wDirectory = QLineEdit();
 		self.wDirectory.setToolTip("Directory where working copy is located");
+		self.wDirectory.setPlaceholderText("e.g. ./src/");
 		self.wDirectory.textChanged.connect(self.setWorkingCopyDir);
 		
 		gbox.addWidget(self.wDirectory, 1,2); # r1 c2
@@ -137,7 +143,9 @@ class DualityWindow(QMainWindow):
 	# Update settings ------------------------------------
 	
 	# update widgets after altering project settings
-	def updateProjectWidgets(self):
+	# - optional args are used to specify if only "smaller" cases occurred
+	# FIXME: this method needs a good rethink/recode???
+	def updateProjectWidgets(self, workingCopyChanged=False):
 		# update titlebar
 		if project.autofile:
 			self.setWindowTitle("Duality SVN");
@@ -145,11 +153,60 @@ class DualityWindow(QMainWindow):
 			self.setWindowTitle('%s - Duality SVN' % os.path.split(project.fileN)[1]);
 		
 		# directory
-		self.wDirectory.setText(project.workingCopyDir);
+		if workingCopyChanged == False:
+			self.wDirectory.setText(project.workingCopyDir);
 		
 		# branches
-		self.pBranch1.updateProjectWidgets();
+		self.updateVisibleBranches();
 		
+	# determine visible branches, updating as necessary
+	def updateVisibleBranches(self):
+		# clear all tabs first
+		self.wTabs.clear();
+		
+		# checkout ..........................
+		
+		# if trunk isn't set, then we only need the setup pane
+		if not project.urlTrunk:
+			if self.pCheckout is None:
+				self.pCheckout = CheckoutBranchPanel();
+			self.wTabs.addTab(self.pCheckout, "Setup Project");
+			
+			return;
+		
+		# trunk .............................
+		
+		# trunk type - reference or standard?
+		if project.urlBranch:
+			trunkType = BranchType.TYPE_TRUNK_REF;
+			trunkLabel = "[Trunk]";
+		else:
+			trunkType = BranchType.TYPE_TRUNK;
+			trunkLabel = "Trunk";
+		
+		# create new or make sure type is up to date
+		if self.pTrunk is None:
+			self.pTrunk = BranchPanel(trunkType);
+		else:
+			# change type and update as necessary
+			self.pTrunk.changeBranchType(trunkType);
+			
+		# hook up tab
+		self.wTabs.addTab(self.pTrunk, trunkLabel);
+		
+		# branch .............................
+		
+		# create branch or show branch details?
+		if project.urlBranch:
+			# branch exists, so show branch work pane
+			if self.pBranch is None:
+				self.pBranch = BranchPanel(BranchType.TYPE_BRANCH);
+			self.wTabs.addTab(self.pBranch, "Branch");
+		else:
+			# branch doesn't exist, so show create branch pane
+			if self.pBranching is None:
+				self.pBranching = NewBranchPanel();
+			self.wTabs.addTab(self.pBranching, "+");
 	
 	# Project Settings -----------------------------------
 	
@@ -213,6 +270,18 @@ class DualityWindow(QMainWindow):
 					
 	# save project settings as-is
 	def saveProject(self):
+		# check whether we can save yet
+		if not project.workingCopyDir:
+			QMessageBox.warning(self, 	
+				"Save Duality Project",
+				"Cannot save with Working Copy Directory undefined");
+			return;
+		elif not project.urlTrunk:
+			QMessageBox.warning(self,
+				"Save Duality Project",
+				"Cannot save with no 'Trunk' URL defined");
+			return;
+		
 		# if file is "autofile", prompt user for where to save, so that it can be found again
 		# - cancel if user cancels without giving a name...
 		if project.autofile:
@@ -226,7 +295,7 @@ class DualityWindow(QMainWindow):
 			else:
 				print "No filename specified. Cancelling save"
 				return;
-			
+		
 		# just save
 		project.save();
 	
@@ -243,13 +312,14 @@ class DualityWindow(QMainWindow):
 		# set this directory
 		if newDir:
 			project.setWorkingCopyDir(str(newDir));
-			self.updateProjectWidgets();
+			self.updateProjectWidgets(workingCopyChanged=True);
 			
 	# Set working copy directory callback wrapper
 	def setWorkingCopyDir(self, value):
 		# flush back to project settings, but only if different
 		if project.workingCopyDir != str(value):
 			project.setWorkingCopyDir(str(value));
+			self.updateProjectWidgets(workingCopyChanged=True);
 		else:
 			print "wc paths same"
 		

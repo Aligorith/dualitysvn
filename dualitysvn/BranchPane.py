@@ -7,9 +7,10 @@
 from . import *
 
 #########################################
+# Branch Operations Panel
 
-# Base define for a pane describing a branch
-class BranchPane(QWidget):
+# Panel for day to day operations within a "branch"
+class BranchPanel(QWidget):
 	# Instance Settings ====================================================
 	__slots__ = (
 		# Model .......................................................
@@ -43,7 +44,7 @@ class BranchPane(QWidget):
 	
 	# ctor
 	def __init__(self, branchType):
-		super(BranchPane, self).__init__();
+		super(BranchPanel, self).__init__();
 		
 		# setup internal settings
 		self.branchType = branchType;
@@ -76,7 +77,8 @@ class BranchPane(QWidget):
 		gbox.addWidget(QLabel("URL:"), 1,1); # r1 c1
 		
 		# 1.2) directory field
-		self.wUrl = QLineEdit("https://svnroot/my-branch");
+		self.wUrl = QLineEdit();
+		self.wUrl.setPlaceholderText("e.g. https://svnroot/project/my-branch");
 		self.wUrl.setToolTip("URL pointing to where the branch is stored in the SVN repository");
 		
 		gbox.addWidget(self.wUrl, 1,2); # r1 c2
@@ -221,12 +223,28 @@ class BranchPane(QWidget):
 			self.wUrl.setText(project.urlTrunk);
 			self.wUrl.setReadOnly(True);
 		else:
-			self.wUrl.setText(project.urlTrunk);
+			if project.urlTrunk:
+				self.wUrl.setText(project.urlTrunk);
+			else:
+				self.wUrl.setText("");
 			self.wUrl.setReadOnly(False);
 		
 		# clear status list
 		self.wStatusView.model.clearAll();
 		self.updateActionWidgets();
+	
+	# change the type of branch
+	def changeBranchType(self, newType):
+		# set type after validation
+		if not newType in (BranchType.TYPE_BRANCH, BranchType.TYPE_TRUNK_REF, BranchType.TYPE_TRUNK):
+			raise ValueError, "Not a valid type of branch - %d" % newType;
+		elif newType == self.branchType:
+			return; # no changes needed, so don't do refresh
+		else:
+			self.branchType = newType;
+		
+		# do updates
+		self.updateProjectWidgets();
 	
 	# Working Copy Import ----------------------------------------------------
 	
@@ -513,5 +531,5 @@ class BranchPane(QWidget):
 			self.svnCommit();
 		else:
 			print "Cancelled reintegrate..."
-			
+
 #########################################
