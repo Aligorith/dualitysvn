@@ -25,11 +25,116 @@ class NewBranchPanel(QWidget):
 		
 		# setup UI widgets
 		self.setupUI();
+		self.updateProjectWidgets();
 		
 	# setup main widgets
 	def setupUI(self):
-		# placeholder
-		self.layout.addWidget(QLabel("Create new branch"));
+		# -) little util defines
+		
+		# -.1) font
+		bfont = QFont();
+		bfont.setWeight(QFont.Bold);
+		
+		# ``````````````````
+		
+		# 1) create new branch help text
+		self.layout.addWidget(QLabel("Create new branch from current 'trunk' in working copy:"));
+		
+		# .................
+		
+		# 2) new branch settings
+		fbox = QFormLayout();
+		self.layout.addLayout(fbox);
+		
+		# 2a) Name . . . . . . . . . . . .
+		# TODO: save this to project?
+		self.wName = QLineEdit();
+		self.wName.setPlaceholderText("e.g. my-new-branch-name");
+		self.wName.setToolTip("Name that new branch should be known as");
+		self.wName.textChanged.connect(self.validateCreateBranchOk);
+		
+		fbox.addRow("Name:", self.wName);
+		
+		# spacer . . . . . . . . . . . .
+		fbox.addItem(QSpacerItem(0,15)); # vertical spacer
+		
+		# 2b) URL's . . . . . . . . . . . 
+		# 2b.1) src trunk
+		self.wOldUrl = QLineEdit();
+		self.wOldUrl.setToolTip("URL pointing to the 'Trunk' to branch from");
+		
+		fbox.addRow("<b>From</b> URL:", self.wOldUrl);
+		
+		# 2b.2) destination 
+		self.wNewUrl = QLineEdit();
+		self.wNewUrl.setPlaceholderText("e.g. https://svnroot/project/branches/my-branch");
+		self.wNewUrl.setToolTip("URL pointing to where the new branch will be stored in the SVN repository");
+		self.wNewUrl.textChanged.connect(self.validateCreateBranchOk);
+		
+		fbox.addRow("<b>New</b> URL:", self.wNewUrl);
+		
+		# spacer ..................
+		self.layout.addSpacing(15);
+		
+		# .................
+		
+		# 4) create branch
+		# TODO: this needs validation that all fields are filled in!
+		self.wCreateBranch = QPushButton("Create New Branch");
+		self.wCreateBranch.setToolTip("Create a new branch using the provided information");
+		self.wCreateBranch.setFont(bfont);
+		self.wCreateBranch.setEnabled(False); # disabled by default, as nothing can be done yet
+		self.wCreateBranch.clicked.connect(self.createNewBranch);
+		
+		self.layout.addWidget(self.wCreateBranch);
+		
+		# .................
+		
+		# TODO: attach to existing branch
+		# 	- this is quite tricky to implement, so will leave this for now
+		#	  but it is something that teams of devs will need if working on
+		#	  some shared branch together unless only single dev can do merging
+		
+		# padding
+		self.layout.addStretch();
+		
+	# Callbacks ====================================
+	
+	# UI Fluff -------------------------------------
+	
+	# Update settings here in response to project change
+	# i.e. "reset all"
+	def updateProjectWidgets(self):
+		# clear all/update from project for text fields
+		self.wOldUrl.setReadOnly(False); # temp disable for setting
+		self.wOldUrl.setText(project.urlTrunk);
+		self.wOldUrl.setReadOnly(True);
+		
+		# init new url from trunk as base, so that less typing is needed
+		self.wNewUrl.setText(project.urlTrunk);
+		
+	# All new-branch fields will trigger this callback when edited, to validate the create branch button
+	def validateCreateBranchOk(self):
+		# get text field values
+		nUrl = str(self.wNewUrl.text());
+		name = str(self.wName.text());
+		
+		# new url must exist, and not be same as previous
+		if (not nUrl) or (nUrl == project.urlTrunk):
+			self.wCreateBranch.setEnabled(False);
+		# name is really only needed for commit-log currently
+		elif not name:
+			self.wCreateBranch.setEnabled(False);
+			
+		# should be good to go
+		else:
+			self.wCreateBranch.setEnabled(True);
+		
+	# SVN Operations --------------------------------
+	
+	# create branch
+	def createNewBranch(self):
+		pass;
 
 #########################################
 # Branch Checkout Panel
