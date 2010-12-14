@@ -310,7 +310,7 @@ class BranchPanel(QWidget):
 		rp.setupEnv(self.branchType);
 		
 		rp.setOp("status");
-		rp.addArgs(["--non-interactive", "--ignore-externals"]); # options for background stuff
+		rp.addArgs(["--ignore-externals"]); # options for background stuff
 		
 		rp.setControlWidgets(self.wRefreshStatus, self.wStopRefreshStatus);
 		rp.wTarget = self.wStatusView;

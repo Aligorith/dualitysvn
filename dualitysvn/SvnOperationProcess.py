@@ -55,7 +55,7 @@ class SvnOperationProcess:
 		
 		self.opName = name;
 		self.svnOp = "";
-		self.args = [];
+		self.args = ["--non-interactive"];
 		
 		# null-define the callbacks that users can bind
 		self.handleOutputCb = None;
