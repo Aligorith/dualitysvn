@@ -167,7 +167,9 @@ class SvnOperationDialog(QDialog):
 	def readOutput(self):
 		line = str(self.process.readLine()).rstrip("\n");
 		#self.wStatus.appendFromStr(line); # TMP for later...
-		self.wStatus.appendPlainText(line);
+		
+		self.wStatus.insertPlainText(line);
+		self.wStatus.ensureCursorVisible();
 	
 	def readErrors(self):
 		# switch to stderr channel to read, then switch back
