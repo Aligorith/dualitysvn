@@ -120,7 +120,9 @@ class NewBranchPanel(QWidget):
 		name = str(self.wName.text());
 		
 		# new url must exist, and not be same as previous
-		if (not nUrl) or (nUrl == project.urlTrunk):
+		if not nUrl:
+			self.wCreateBranch.setEnabled(False);
+		elif nUrl == project.urlTrunk:
 			self.wCreateBranch.setEnabled(False);
 		# name is really only needed for commit-log currently
 		elif not name:
@@ -133,8 +135,24 @@ class NewBranchPanel(QWidget):
 	# SVN Operations --------------------------------
 	
 	# create branch
+	# TODO: do status updates as this process proceeds...
 	def createNewBranch(self):
-		pass;
+		# make a copy of the existing svn metadata - i.e. setup "trunk" copy as "branch2"
+		print "Setting up Working Copy Duality..."
+		#duplicateSvnMetadata(project.workingCopyDir);
+		
+		# perform an "svn copy" operation to make a new branch on the repository
+		# 	WC + URL = instant commit 
+		print "Branching Commit Pending..."
+		cmd = 'svn co "%(sd)s" %(tar)s -m "%(cm)s"' % {'sd':srcdir, 'tar':target, 'cm':"Creating '%s' branch"%(branchName)}
+		#OSU_runCommand(cmd); 
+		
+		# change working copy to the branch now
+		print "Switching Working Copy to New Branch..."
+		cmd = 'svn switch %s' % (target)
+		#OSU_runCommand(cmd);
+
+	
 
 #########################################
 # Branch Checkout Panel

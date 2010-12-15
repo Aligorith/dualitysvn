@@ -36,6 +36,15 @@ else:
 ####################################
 # Defines
 
+# Svn Settings ----------------------
+
+# folder names where svn keeps its meta data for the two branches
+SVN_DIRNAME_BRANCH1 = ".svn"
+SVN_DIRNAME_BRANCH2 = "_svn"
+
+# environment variable that is set to allow this behaviour to work
+SVN_HACK_ENVVAR = 'SVN_ASP_DOT_NET_HACK';
+
 # Branch Type ----------------------
 
 class BranchType:

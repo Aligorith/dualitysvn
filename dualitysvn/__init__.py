@@ -8,6 +8,9 @@ __name__ = 'dualitysvn'
 # import core defines
 from coreDefines import *
 
+# SVN utilties - not need for all, but good to have at hand
+from SvnTools import *
+
 # import everything into here just to make things easier
 # FIXME: make proper use of namespaces...
 from SvnOperationProcess import *
