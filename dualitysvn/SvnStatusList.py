@@ -115,6 +115,8 @@ class SvnStatusListDatalist(list):
 	
 	# Special Ops ============================================
 	
+	# Data List ----------------------------------------------
+	
 	# filter the items in the list, using the given predicate function
 	# < cb: (fn(SvnStatusListItem)=bool) predicate function to apply
 	# > return[0]: (SvnStatusListDatalist) a new list with the unwanted items filtered out 
@@ -127,17 +129,36 @@ class SvnStatusListDatalist(list):
 		
 		return nList;
 	
+	# Outputting to File --------------------------------------
+	
+	# get filename
+	# < (opName): (str) optional name of the SVN operation which 
+	def getPathsFileName(self, opName=None):
+		# FIXME: the directory where this gets dumped should be user defined
+		dirN = os.getcwd();
+		
+		# include the operation name if provided, to avoid clashes on chained ops
+		if opName:
+			fileN = os.path.join(dirN, opName + '_' + SvnStatusListDatalist.TARGETS_FILENAME);
+		else:
+			fileN = os.path.join(dirN, SvnStatusListDatalist.TARGETS_FILENAME);
+			
+		return fileN;
+	
 	# save our items' paths to a file to pass to an svn operation
+	# < (opName): (str) optional name of the SVN operation which 
 	# > return[0]: (str) name of file where these paths were saved to
-	def savePathsFile(self):
+	def savePathsFile(self, opName=None):
+		# determine filename
+		fileN = self.getPathsFileName(opName);
+		
 		# write (full) paths only to file
-		with open(SvnStatusListDatalist.TARGETS_FILENAME, 'w') as f:
+		with open(fileN, 'w') as f:
 			for item in self:
 				f.write(item.path + '\n');
 		
 		# return the full filename
-		# FIXME: the directory where this gets dumped should be user defined
-		return os.path.join(os.getcwd(), SvnStatusListDatalist.TARGETS_FILENAME);
+		return fileN;
 
 #########################################
 # Data Model (Tailored for UI)
@@ -398,9 +419,6 @@ class SvnStatusList(QTreeView):
 		self.setAlternatingRowColors(True);
 		self.setUniformRowHeights(True);
 		
-		# column sizes - first column widest, and the others should be less
-		
-		
 		# double-click remapping
 		# - first line disables default "expand" behaviour, which causes crashes
 		# - second line hooks up event catcher to implement new dbl-click behaviour 
@@ -472,6 +490,7 @@ class SvnStatusList(QTreeView):
 	# Get list of selected items to operate on
 	def getOperationList(self):
 		# just return a copy of the model's list...
+		# TODO: this hinges on whether checkboxes are used!
 		return self.model.checked.copy();
 
 #########################################

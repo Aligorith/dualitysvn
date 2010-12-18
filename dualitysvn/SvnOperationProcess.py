@@ -28,8 +28,10 @@ class SvnOperationProcess:
 		
 		# SVN Settings --------------------
 		'opName',	# (str) user-visible name of action we're doing
+		
 		'svnOp',	# (str) name of svn subcommand to use
 		'args',		# (list<str>) list of argument strings to use
+		'tarList',	# (SvnStatusDatalist) list of targets to use
 		
 		# Callbacks -----------------------
 		'handleOutputCb',	# (fn(SvnOperationProcess, line:str)) handle line of output from process, for adding to model/target widget as needed
@@ -55,7 +57,8 @@ class SvnOperationProcess:
 		
 		self.opName = name;
 		self.svnOp = "";
-		self.args = ["--non-interactive"];
+		self.args = ["--non-interactive", "--trust-server-cert"]; # no prompts or stopping for anything!
+		self.tarList = None; # optional "list of targets"
 		
 		# null-define the callbacks that users can bind
 		self.handleOutputCb = None;
@@ -88,9 +91,15 @@ class SvnOperationProcess:
 		self.svnOp = svnOpName;
 	
 	# Add a list of arguments to be passed to svn when running it
-	# args: (list<str>) list of arguments to run
+	# < args: (list<str>) list of arguments to run
 	def addArgs(self, args):
 		self.args += args;
+		
+	# Set the list of targets for the operation to use
+	# < targetsList: (SvnStatusDatalist) list of paths that need to be operated on
+	def setTargets(self, targetsList):
+		# validate then set
+		self.tarList = targetsList;
 		
 	# Environment --------------------------------
 	
@@ -136,8 +145,15 @@ class SvnOperationProcess:
 		if self.preStartCb:
 			self.preStartCb(self);
 		
+		# setup targets list (if needed)
+		if self.tarList:
+			tarFileN = self.tarList.savePathsFile(self.svnOp);
+			tarArgs = ['--targets', tarFileN];
+		else:
+			tarArgs = [];
+		
 		# try and start the process now
-		self.process.start("svn", [self.svnOp]+self.args);
+		self.process.start("svn", [self.svnOp]+self.args+tarArgs);
 		
 		if self.process.state() == QProcess.NotRunning:
 			# msgbox warning about error if not silent
@@ -164,6 +180,16 @@ class SvnOperationProcess:
 		
 		# refresh
 		self.doneProcess();
+	
+	# Run process in a blocking manner (for background helper-processes)
+	def runBlocking(self):
+		# start running
+		# TODO: should we add return bool to this to check successs?
+		self.startProcess();
+		
+		# this will return when the process is done at last
+		# 	-1 arg gives "no-timeout"
+		return self.waitForFinished(-1);
 	
 	# Internal (Reading) ------------------------
 	
@@ -205,7 +231,12 @@ class SvnOperationProcess:
 				# switch the enabled widget
 				self.wStart.setEnabled(True);
 				self.wEnd.setEnabled(False);
-				
+		
+		# cleanup targets list temp file (if needed)
+		if self.tarList:
+			tarFile = self.tarList.getPathsFileName(self.svnOp);
+			os.remove(tarFile);
+		
 		# run cleanup callback
 		if self.postEndCb:
 			self.postEndCb(self);
@@ -219,6 +250,7 @@ class SvnOperationProcess:
 		# TODO: grab rest of errors?
 		
 		# if exited with some problem, make sure we warn
+		# TODO: also keep track of other status too...
 		if exitStatus == QProcess.CrashExit:
 			if not self.silentErrors:
 				QMessageBox.warning(self.parent,
@@ -227,5 +259,5 @@ class SvnOperationProcess:
 		
 		# done cleanup
 		self.doneProcess();
-	
+
 #########################################
