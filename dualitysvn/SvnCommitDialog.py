@@ -227,17 +227,17 @@ class SvnCommitDialog(QDialog):
 		if not files:
 			return;
 			
-		# setup svn add process
-		ap = SvnOperationProcess(self, "Commit Delete");
+		# setup svn delete process
+		dp = SvnOperationProcess(self, "Commit Delete");
 		
-		ap.setupEnv(BranchType.TYPE_TRUNK); # FIXME: this is currently hardcoded, but needs to be able to be passed in 
+		dp.setupEnv(BranchType.TYPE_TRUNK); # FIXME: this is currently hardcoded, but needs to be able to be passed in 
 		
-		ap.setOp("delete");
-		ap.addArgs(SvnOp_Args['delete']);
-		ap.setTargets(files);
+		dp.setOp("delete");
+		dp.addArgs(SvnOp_Args['delete']);
+		dp.setTargets(files);
 		
 		# run operation (blocking style) now
-		if not ap.runBlocking():
+		if not dp.runBlocking():
 			print "Error... auto-delete failed"
 			
 	# helper for validatePaths - resolve paths that need resolving
