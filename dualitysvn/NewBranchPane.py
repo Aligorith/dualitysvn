@@ -137,15 +137,27 @@ class NewBranchPanel(QWidget):
 	# create branch
 	# TODO: do status updates as this process proceeds...
 	def createNewBranch(self):
+		# grab vars for easier work
+		srcdir = project.workingCopyDir;
+		source = str(self.wOldUrl.text());
+		target = str(self.wNewUrl.text());
+		branchName = str(self.wName.text());
+		
 		# make a copy of the existing svn metadata - i.e. setup "trunk" copy as "branch2"
 		print "Setting up Working Copy Duality..."
-		#duplicateSvnMetadata(project.workingCopyDir);
+		#duplicateSvnMetadata(srcdir);
 		
 		# perform an "svn copy" operation to make a new branch on the repository
 		# 	WC + URL = instant commit 
 		print "Branching Commit Pending..."
 		cmd = 'svn co "%(sd)s" %(tar)s -m "%(cm)s"' % {'sd':srcdir, 'tar':target, 'cm':"Creating '%s' branch"%(branchName)}
-		#OSU_runCommand(cmd); 
+		bp = SvnOperationProcess(self, "Create Branch (Commit)");
+		
+		bp.setupEnv(BranchType.TYPE_TRUNK); # can only branch from a "trunk
+		
+		bp.setOp("co");
+		bp.addArgs([srcdir, target]); # from, to
+		bp.addArgs(['-m', "Creating '%s' branch from'%s'\n\nCourtesy of Duality SVN" % (branchName, source)]); # commit log message
 		
 		# change working copy to the branch now
 		print "Switching Working Copy to New Branch..."
