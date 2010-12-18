@@ -34,6 +34,7 @@ class DualityWindow(QMainWindow):
 		
 		# main window settings
 		self.setWindowTitle('Duality SVN');
+		self.setWindowIcon(QIcon('icons/duality_logo.png'))
 		
 		# register "actions"
 		self.setupActions();
