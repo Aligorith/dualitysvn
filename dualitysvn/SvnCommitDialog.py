@@ -109,6 +109,16 @@ class SvnCommitDialog(QDialog):
 		# only if there is content, may we continue...
 		self.wCommit.setEnabled(len(bareMessage) >= SvnCommitDialog.MIN_LOG_LEN);
 		
+	# override of 'commit' button
+	def accept(self):
+		# perform validation of files, including additional action if necessary...
+		if self.validatePaths():
+			# now perform standard action
+			return super(SvnCommitDialog, self).accept();
+		else:
+			# already rejected...
+			pass;
+		
 	# Methods ============================================
 	
 	# Log Message ----------------------------------------
@@ -145,5 +155,68 @@ class SvnCommitDialog(QDialog):
 		# return full path name
 		# FIXME: the directory where this gets dumped should be user defined
 		return os.path.join(os.getcwd(), fileN);
+	
+	# Path List Validation ------------------------------------
+	
+	# make sure all files to be committed are accounted for
+	def validatePaths(self):
+		# get lists of files to fix up
+			# "unversioned" == need to add
+		needAdd = self.wFileList.getOperationList().getFiltered(lambda x: x.file_status == SvnStatusListItem.FileStatusMap['?']);
+			# "missing" == already deleted from working copy (or manually renamed), just not noted in svn metadata
+		needDelete = self.wFileList.getOperationList().getFiltered(lambda x: x.file_status == SvnStatusListItem.FileStatusMap['!']);
+			# "conflicted" == resolved?
+		needResolve = self.wFileList.getOperationList().getFiltered(lambda x: x.file_status == SvnStatusListItem.FileStatusMap['C']);
+		
+		# need to do anything?
+		if needAdd or needDelete or needResolve:
+			# prompt to do cleanups
+			msg  = "The following changes will be performed so that committing can proceed:\n\n";
+			msg += len(needAdd) + " <b>unversioned</b> paths need to be <b>Added</b>\n";
+			msg += len(needDelete) + " <b>missing</b> paths need to be <b>Deleted</b>\n";
+			msg += len(needResolve) + " <b>conflicted</b> paths need to be <b>Resolved</b>\n";
+			msg += "\nApply these changes?";
+			
+			reply = QMessageBox.question(self, 'Confirm Changes',
+				msg, 
+				QMessageBox.Apply | QMessageBox.Cancel,
+				QMessageBox.Apply);
+				
+			# proceed
+			if reply == QMessageBox.Apply:
+				# perform validation actions
+				self.validatePathsAdd(needAdd);
+				self.validatePathsDelete(needDelete);
+				self.validatePathsResolve(needResolve);
+				
+				# can proceed with commit now
+				return True;
+			else:
+				# don't perform actions, so user might want to go back and check
+				return False;
+		else:
+			# don't do anything
+			return True;
+			
+	# helper for validatePaths - add paths that need adding
+	def validatePathsAdd(self, files):
+		# skip if nothing to do
+		if not files:
+			return;
+		
+			
+	# helper for validatePaths - delete paths that need deleting
+	def validatePathsDelete(self, files):
+		# skip if nothing to do
+		if not files:
+			return;
+			
+	# helper for validatePaths - resolve paths that need resolving
+	def validatePathsResolve(self, files):
+		# skip if nothing to do
+		if not files:
+			return;
+	
+	
 	
 #########################################
