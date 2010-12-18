@@ -42,3 +42,36 @@ def duplicateSvnMetadata(root):
 	return errors;
 
 #######################################
+# SVN Operation Argument Defines
+
+# svn opname : 
+#	[list, of, arguments,
+#	 for, each, operation]
+
+SvnOp_Args = {
+	# Target-less -----------------------------------
+	'status' :
+		['--ignore-externals'], # 'externals' are other SVN trees linked in. They DON'T REALLY MATTER FOR ANYTHING!
+		
+	'update' :
+		['--accept-postpone'], 	# easiest conflict resolution method still is to manually fix in text editor 
+	
+	# With Target List ------------------------------
+	
+	'add' :
+		['--auto-props'],	# SVN props are automatically added based on filetype
+		
+	'delete' :
+		[],
+		#['--keep-local'],	# don't delete working copy's copy (TODO: enable this when branched so that we can do the other branch next)
+		
+	'revert' :
+		[],
+		
+	'commit' :
+		['--force-log',
+		 #'-F', LOGFILE		# <--- these are added manually by commit code
+		]
+};
+
+#######################################
