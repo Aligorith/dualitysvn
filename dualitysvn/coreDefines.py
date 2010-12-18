@@ -23,6 +23,11 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
 ####################################
+# Own includes for use everywhere
+
+from SvnTools import *
+
+####################################
 # "Project" Global
 
 from Project import *
@@ -45,9 +50,14 @@ SVN_DIRNAME_BRANCH2 = "_svn"
 # environment variable that is set to allow this behaviour to work
 SVN_HACK_ENVVAR = 'SVN_ASP_DOT_NET_HACK';
 
-# Branch Type ----------------------
+# Branch Type -------------------------
 
 class BranchType:
 	TYPE_TRUNK, TYPE_TRUNK_REF, TYPE_BRANCH = range(3);
+	
+# Status Messages for Processes -------
+
+class ProcessStatus:
+	STATUS_WORKING, STATUS_DONE, STATUS_FAILED = range(3);
 
 ####################################

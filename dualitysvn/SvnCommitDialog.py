@@ -5,6 +5,7 @@
 
 from coreDefines import *
 
+from SvnOperationProcess import *
 from SvnStatusList import *
 
 #########################################
@@ -26,6 +27,9 @@ class SvnCommitDialog(QDialog):
 	
 	# Instance Settings ================================
 	__slots__ = (
+		'branchName', # (str)
+		'branchType', # (BranchType.TYPE_*)
+		
 		'layout',	# (QLayout) layout manager for widget
 	);
 	
@@ -172,13 +176,13 @@ class SvnCommitDialog(QDialog):
 		if needAdd or needDelete or needResolve:
 			# prompt to do cleanups
 			msg  = "The following changes will be performed so that committing can proceed:\n\n";
-			msg += len(needAdd) + " <b>unversioned</b> paths need to be <b>Added</b>\n";
-			msg += len(needDelete) + " <b>missing</b> paths need to be <b>Deleted</b>\n";
-			msg += len(needResolve) + " <b>conflicted</b> paths need to be <b>Resolved</b>\n";
+			msg += '  ' + str(len(needAdd)) + " <b>unversioned</b> paths need to be <b>Added</b>\n";
+			msg += '  ' + str(len(needDelete)) + " <b>missing</b> paths need to be <b>Deleted</b>\n";
+			msg += '  ' + str(len(needResolve)) + " <b>conflicted</b> paths need to be <b>Resolved</b>\n";
 			msg += "\nApply these changes?";
 			
 			reply = QMessageBox.question(self, 'Confirm Changes',
-				msg, 
+				Qt.convertFromPlainText(msg), 
 				QMessageBox.Apply | QMessageBox.Cancel,
 				QMessageBox.Apply);
 				
@@ -204,12 +208,37 @@ class SvnCommitDialog(QDialog):
 		if not files:
 			return;
 		
+		# setup svn add process
+		ap = SvnOperationProcess(self, "Commit Add");
+		
+		ap.setupEnv(BranchType.TYPE_TRUNK); # FIXME: this is currently hardcoded, but needs to be able to be passed in 
+		
+		ap.setOp("add");
+		ap.addArgs(SvnOp_Args['add']);
+		ap.setTargets(files);
+		
+		# run operation (blocking style) now
+		if not ap.runBlocking():
+			print "Error... auto-add failed"
 			
 	# helper for validatePaths - delete paths that need deleting
 	def validatePathsDelete(self, files):
 		# skip if nothing to do
 		if not files:
 			return;
+			
+		# setup svn add process
+		ap = SvnOperationProcess(self, "Commit Delete");
+		
+		ap.setupEnv(BranchType.TYPE_TRUNK); # FIXME: this is currently hardcoded, but needs to be able to be passed in 
+		
+		ap.setOp("delete");
+		ap.addArgs(SvnOp_Args['delete']);
+		ap.setTargets(files);
+		
+		# run operation (blocking style) now
+		if not ap.runBlocking():
+			print "Error... auto-delete failed"
 			
 	# helper for validatePaths - resolve paths that need resolving
 	def validatePathsResolve(self, files):

@@ -98,7 +98,6 @@ class SvnOperationProcess:
 	# Set the list of targets for the operation to use
 	# < targetsList: (SvnStatusDatalist) list of paths that need to be operated on
 	def setTargets(self, targetsList):
-		# validate then set
 		self.tarList = targetsList;
 		
 	# Environment --------------------------------
@@ -189,7 +188,7 @@ class SvnOperationProcess:
 		
 		# this will return when the process is done at last
 		# 	-1 arg gives "no-timeout"
-		return self.waitForFinished(-1);
+		return self.process.waitForFinished(-1);
 	
 	# Internal (Reading) ------------------------
 	

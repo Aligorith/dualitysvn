@@ -490,7 +490,9 @@ class SvnStatusList(QTreeView):
 	# Get list of selected items to operate on
 	def getOperationList(self):
 		# just return a copy of the model's list...
-		# TODO: this hinges on whether checkboxes are used!
-		return self.model.checked.copy();
+		if self.model.checksOn:
+			return self.model.checked.copy();
+		else:
+			return self.model.listItems.copy();
 
 #########################################
