@@ -8,10 +8,15 @@ from coreDefines import *
 #########################################
 # Operation Object
 
+# TODO:
+#	- progress % tracker + callbacks for determining this
+
 class SvnOperationProcess:
 	__slots__ = (
 		# Process -------------------------
 		'process',	# (QProcess) process to operate
+		
+		'status', 	# (ProcessStatus.STATUS_*) state of the proces
 		
 		# Affected Widgets ----------------
 		'wStart',	# (QPushButton) button used to start process
@@ -46,6 +51,8 @@ class SvnOperationProcess:
 	# setup "process" for grabbing stuff from
 	def __init__(self, parent, name):
 		# null-define other data first
+		self.status = ProcessStatus.STATUS_SETUP;
+		
 		self.wStart = self.wEnd = None;
 		self.widgetVisibility = False;
 		
@@ -160,6 +167,9 @@ class SvnOperationProcess:
 				QMessageBox.warning(self.parent,
 					"SVN Error",
 					"Could perform %s operation" % (self.opName));
+					
+			# set to "failed" status
+			self.status = self.status = ProcessStatus.STATUS_FAILED;
 		else:
 			# disable start + enable stop buttons (if given)
 			if self.wStart and self.wEnd:
@@ -171,11 +181,17 @@ class SvnOperationProcess:
 					# switch the enabled widget
 					self.wStart.setEnabled(False);
 					self.wEnd.setEnabled(True);
+					
+			# set to "running" status
+			self.status = ProcessStatus.STATUS_WORKING;
 		
 	# Abort process prematurely
 	def endProcess(self):
 		# kill process - only way to get rid of console apps on windows
 		self.process.kill();
+		
+		# FIXME: should we have a "status killed"?
+		self.status = ProcessStatus.STATUS_DONE;
 		
 		# refresh
 		self.doneProcess();
@@ -251,10 +267,17 @@ class SvnOperationProcess:
 		# if exited with some problem, make sure we warn
 		# TODO: also keep track of other status too...
 		if exitStatus == QProcess.CrashExit:
+			# broadcast error with a msgbox?
 			if not self.silentErrors:
 				QMessageBox.warning(self.parent,
 					"SVN Error",
 					"%s operation was not completed successfully" % (self.opName));
+					
+			# set status to failed
+			self.status = ProcessStatus.STATUS_FAILED;
+		else:
+			# succeeded
+			self.status = ProcessStatus.STATUS_DONE;
 		
 		# done cleanup
 		self.doneProcess();

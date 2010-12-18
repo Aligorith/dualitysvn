@@ -58,6 +58,6 @@ class BranchType:
 # Status Messages for Processes -------
 
 class ProcessStatus:
-	STATUS_WORKING, STATUS_DONE, STATUS_FAILED = range(3);
+	STATUS_SETUP, STATUS_WORKING, STATUS_DONE, STATUS_FAILED = range(4);
 
 ####################################
