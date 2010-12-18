@@ -54,7 +54,7 @@ SvnOp_Args = {
 		['--ignore-externals'], # 'externals' are other SVN trees linked in. They DON'T REALLY MATTER FOR ANYTHING!
 		
 	'update' :
-		['--accept-postpone'], 	# easiest conflict resolution method still is to manually fix in text editor 
+		['--accept', 'postpone'], 	# easiest conflict resolution method still is to manually fix in text editor 
 	
 	# With Target List ------------------------------
 	
