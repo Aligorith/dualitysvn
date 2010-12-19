@@ -113,11 +113,18 @@ class DualityWindow(QMainWindow):
 		self.aSaveProject = QAction("&Save Project",
 			self, shortcut="Ctrl+S", triggered=self.saveProject);
 		
+		
+		self.aProjectConfig = QAction("Project Configuration",
+			self, triggered=self.projectConfig);
+		
+		self.aSvnConfig = QAction("SVN Configuration",
+			self, triggered=self.svnConfig);
+		
 		# system ---------------------------------
 		self.aExit = QAction("E&xit", 
 			self, shortcut="Ctrl+Q", triggered=self.close);
 			
-		# help
+		# help -----------------------------------
 		self.aAbout = QAction("&About",
 			self, shortcut="F12", triggered=self.aboutInfo);
 		self.aAboutQt = QAction("About Qt",
@@ -133,13 +140,38 @@ class DualityWindow(QMainWindow):
 		
 		self.mFileMenu.addSeparator();
 		
+		self.mFileMenu.addAction(self.aProjectConfig);
+		self.mFileMenu.addAction(self.aSvnConfig);
+		
+		self.mFileMenu.addSeparator();
+		
 		self.mFileMenu.addAction(self.aExit);
+		
+		# 2) branch menu
+		self.mEditMenu = self.menuBar().addMenu("&Edit");
+		self.mEditMenu.addAction("Show Log"); # FIXME: placeholder
+		self.mEditMenu.addAction("Cleanup (Fix Errors)"); # FIXME: placeholder
+		self.mEditMenu.addAction("Edit Conflicts"); # FIXME: placeholder
 		
 		# 3) help menu
 		self.mHelpMenu = self.menuBar().addMenu("&Help");
 		self.mHelpMenu.addAction(self.aAbout);
 		self.mHelpMenu.addAction(self.aAboutQt);
 
+	# Helper Methods ===================================== 
+	
+	# Get the panel for the active branch (if available)
+	# > return[0]: (BranchPane) branch panel for active tab if applicable
+	def getActiveBranchTab(self):
+		# gets the panel associated with the active tab directly
+		actPane = self.wTabs.currentWidget();
+		
+		# check if branch
+		if isinstance(actPane, BranchPane):
+			return actPane;
+		else:
+			return None;
+	
 	# Callbacks ========================================== 
 	
 	# Update settings ------------------------------------
@@ -324,6 +356,16 @@ class DualityWindow(QMainWindow):
 		else:
 			# don't quit yet
 			event.ignore();
+	
+	# Settings -------------------------------------------
+	
+	def projectConfig(self):
+		print "Project Settings Config dialog"
+		# - temp-dir for log/target files
+	
+	
+	def svnConfig(self):
+		print "SVN Settings Config dialog"
 	
 	# Working Copy ---------------------------------------
 	
