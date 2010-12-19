@@ -437,8 +437,14 @@ class BranchPanel(QWidget):
 			self.noDataSelectedCb("Revert");
 			return;
 		
-		# filter list of files to not include externals or unversioned
-		# TODO...
+		# filter list of files to NOT include externals or unversioned
+		def filterPredicate(item):
+			for k in ('?', 'X'):	
+				if self.file_status == SvnStatusListItem.FileStatusMap[k]:
+					return False;
+			else:
+				return True;
+		files = files.getFiltered(filterPredicate);
 		
 		# setup process
 		p1 = SvnOperationProcess(self, "Revert");
@@ -469,7 +475,6 @@ class BranchPanel(QWidget):
 		
 	# perform SVN Commit
 	# TODO: 
-	#	- have a special prepass which performs svn add for missing files...
 	# 	- directory read/write permissions issues...
 	def svnCommit(self):
 		# get list of files to change
