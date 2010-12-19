@@ -214,7 +214,7 @@ class SvnCommitDialog(QDialog):
 		ap.setupEnv(BranchType.TYPE_TRUNK); # FIXME: this is currently hardcoded, but needs to be able to be passed in 
 		
 		ap.setOp("add");
-		ap.addArgs(SvnOp_Args['add']);
+		ap.addDefaultArgs();
 		ap.setTargets(files);
 		
 		# run operation (blocking style) now
@@ -233,7 +233,7 @@ class SvnCommitDialog(QDialog):
 		dp.setupEnv(BranchType.TYPE_TRUNK); # FIXME: this is currently hardcoded, but needs to be able to be passed in 
 		
 		dp.setOp("delete");
-		dp.addArgs(SvnOp_Args['delete']);
+		dp.addDefaultArgs();
 		dp.setTargets(files);
 		
 		# run operation (blocking style) now

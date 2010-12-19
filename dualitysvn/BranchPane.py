@@ -253,8 +253,8 @@ class BranchPanel(QWidget):
 		p1 = SvnOperationProcess(self, "Update");
 		p1.setupEnv(self.branchType);
 		
-		p1.setOp("up");
-		p1.addArgs(SvnOp_Args['update']);
+		p1.setOp("update");
+		p1.addDefaultArgs();
 		
 		# setup and run dialog
 		dlg = SvnOperationDialog(self, "Update");
@@ -309,11 +309,10 @@ class BranchPanel(QWidget):
 	def svnRefreshStatus(self):
 		# setup svn process
 		self.refreshProcess = rp = SvnOperationProcess(self, "Refresh Status");
-		
 		rp.setupEnv(self.branchType);
 		
 		rp.setOp("status");
-		rp.addArgs(SvnOp_Args['status']);
+		rp.addDefaultArgs();
 		
 		rp.setControlWidgets(self.wRefreshStatus, self.wStopRefreshStatus);
 		rp.wTarget = self.wStatusView;
@@ -383,7 +382,7 @@ class BranchPanel(QWidget):
 		p1.setupEnv(self.branchType);
 		
 		p1.setOp("add");
-		p1.addArgs(SvnOp_Args['add']);
+		p1.addDefaultArgs();
 		p1.setTargets(files);
 		
 		# setup and run dialog
@@ -418,7 +417,7 @@ class BranchPanel(QWidget):
 		p1.setupEnv(self.branchType);
 		
 		p1.setOp("delete");
-		p1.addArgs(SvnOp_Args['delete']);
+		p1.addDefaultArgs();
 		p1.setTargets(files);
 		
 		# setup and run dialog
@@ -446,7 +445,7 @@ class BranchPanel(QWidget):
 		p1.setupEnv(self.branchType);
 		
 		p1.setOp("revert");
-		p1.addArgs(SvnOp_Args['revert']);
+		p1.addDefaultArgs();
 		p1.setTargets(files);
 		
 		# setup and run dialog
@@ -494,8 +493,8 @@ class BranchPanel(QWidget):
 			p1.setupEnv(self.branchType);
 			
 			p1.setOp("commit");
-			p1.addArgs(SvnOp_Args['commit']);
-			p1.addArgs(['--force-log', '-F', logFile]); # log message - must have one...
+			p1.addDefaultArgs();
+			p1.addArgs(['--force-log', '-F', logFile]); # log message - must have one
 			p1.setTargets(files);
 			
 			# setup and run dialog

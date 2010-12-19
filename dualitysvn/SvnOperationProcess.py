@@ -102,6 +102,10 @@ class SvnOperationProcess:
 	def addArgs(self, args):
 		self.args += args;
 		
+	# Add a list of default arguments to be passed to svn for this operation (using internal svnOp name)
+	def addDefaultArgs(self):
+		self.args += SvnOp_Args[self.svnOp];
+		
 	# Set the list of targets for the operation to use
 	# < targetsList: (SvnStatusDatalist) list of paths that need to be operated on
 	def setTargets(self, targetsList):
