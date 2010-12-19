@@ -249,17 +249,20 @@ class BranchPanel(QWidget):
 	# Working Copy Import ----------------------------------------------------
 	
 	def svnUpdate(self):
-		# setup svn action dialog
+		# setup process
+		p1 = SvnOperationProcess(self, "Update");
+		p1.setupEnv(self.branchType);
+		
+		p1.setOp("up");
+		p1.addArgs(SvnOp_Args['update']);
+		
+		# setup and run dialog
 		dlg = SvnOperationDialog(self, "Update");
-		dlg.setupEnv(self.branchType);
-		dlg.setOp("up");
 		
-		# setup arguments for svn
-		dlg.addArgs(["--accept", "postpone"]); # conflict res should be manually handled by user afterwards?
+		dlg.addProcess(p1);
 		
-		# let it run now
 		dlg.go();
-		dlg.exec_();
+		
 	
 	def svnApplyPatch(self):
 		self.unimplementedFeatureCb("Apply Patch");		
@@ -310,7 +313,7 @@ class BranchPanel(QWidget):
 		rp.setupEnv(self.branchType);
 		
 		rp.setOp("status");
-		rp.addArgs(["--ignore-externals"]); # options for background stuff
+		rp.addArgs(SvnOp_Args['status']);
 		
 		rp.setControlWidgets(self.wRefreshStatus, self.wStopRefreshStatus);
 		rp.wTarget = self.wStatusView;
@@ -375,24 +378,20 @@ class BranchPanel(QWidget):
 		# filter list of files to only include unversioned
 		files = files.getFiltered(lambda x: x.file_status == SvnStatusListItem.FileStatusMap['?']);
 		
-		# dump names of files to commit to another temp file
-		tarFile = files.savePathsFile();
+		# setup process
+		p1 = SvnOperationProcess(self, "Add");
+		p1.setupEnv(self.branchType);
 		
-		# create operation dialog, and prepare it for work
-		# TODO: should we do this for both branches at once?
+		p1.setOp("add");
+		p1.addArgs(SvnOp_Args['add']);
+		p1.setTargets(files);
+		
+		# setup and run dialog
 		dlg = SvnOperationDialog(self, "Add");
-		dlg.setupEnv(self.branchType);
-		dlg.setOp("add");
 		
-		dlg.addArgs(['--targets', tarFile]); # list of files to add
-		dlg.addArgs(['--auto-props']); # automatically set svn-properties on files based on status
+		dlg.addProcess(p1);
 		
-		# run dialog and perform operation
 		dlg.go();
-		dlg.exec_();
-		
-		# cleanup temp files
-		os.remove(tarFile);
 		
 		# now schedule update to status list
 		self.svnRefreshStatus();
@@ -413,24 +412,21 @@ class BranchPanel(QWidget):
 				return False;
 		files = files.getFiltered(filterPredicate);
 		
-		# dump names of files to commit to another temp file
-		tarFile = files.savePathsFile();
+		# setup process
+		# TODO: what happens for the other branch?
+		p1 = SvnOperationProcess(self, "Delete");
+		p1.setupEnv(self.branchType);
 		
-		# create operation dialog, and prepare it for work
-		# TODO: should we do this for both branches at once?
+		p1.setOp("delete");
+		p1.addArgs(SvnOp_Args['delete']);
+		p1.setTargets(files);
+		
+		# setup and run dialog
 		dlg = SvnOperationDialog(self, "Delete");
-		dlg.setupEnv(self.branchType);
-		dlg.setOp("del");
 		
-		dlg.addArgs(['--targets', tarFile]); # list of files to delete
-		#dlg.addArgs(['--keep-local']); # don't delete working copy's copy (TODO: enable this when branched so that we can do the other branch next)
+		dlg.addProcess(p1);
 		
-		# run dialog and perform operation
 		dlg.go();
-		dlg.exec_();
-		
-		# cleanup temp files
-		os.remove(tarFile);
 		
 		# now schedule update to status list
 		self.svnRefreshStatus();
@@ -445,22 +441,20 @@ class BranchPanel(QWidget):
 		# filter list of files to not include externals or unversioned
 		# TODO...
 		
-		# dump names of files to commit to another temp file
-		tarFile = files.savePathsFile();
+		# setup process
+		p1 = SvnOperationProcess(self, "Revert");
+		p1.setupEnv(self.branchType);
 		
-		# create operation dialog, and prepare it for work
+		p1.setOp("revert");
+		p1.addArgs(SvnOp_Args['revert']);
+		p1.setTargets(files);
+		
+		# setup and run dialog
 		dlg = SvnOperationDialog(self, "Revert");
-		dlg.setupEnv(self.branchType);
-		dlg.setOp("revert");
 		
-		dlg.addArgs(['--targets', tarFile]); # list of files to revert
+		dlg.addProcess(p1);
 		
-		# run dialog and perform operation
 		dlg.go();
-		dlg.exec_();
-		
-		# cleanup temp files
-		os.remove(tarFile);
 		
 		# now schedule update to status list
 		self.svnRefreshStatus();
@@ -495,24 +489,24 @@ class BranchPanel(QWidget):
 			# retrieve log message, and save it to a temp file
 			logFile = dlg.saveLogMessage();
 			
-			# dump names of files to commit to another temp file
-			tarFile = files.savePathsFile();
+			# setup process
+			p1 = SvnOperationProcess(self, "Commit");
+			p1.setupEnv(self.branchType);
 			
-			# create commit dialog, and prepare it for work
+			p1.setOp("commit");
+			p1.addArgs(SvnOp_Args['commit']);
+			p1.addArgs(['--force-log', '-F', logFile]); # log message - must have one...
+			p1.setTargets(files);
+			
+			# setup and run dialog
 			dlg2 = SvnOperationDialog(self, "Commit");
-			dlg2.setupEnv(self.branchType);
-			dlg2.setOp("commit");
 			
-			dlg2.addArgs(['--targets', tarFile]); # list of files to commit
-			dlg2.addArgs(['--force-log', '-F', logFile]); # log message - must have one...
+			dlg2.addProcess(p1);
 			
-			# run dialog and perform operation
 			dlg2.go();
-			dlg2.exec_();
 			
 			# cleanup temp files
 			os.remove(logFile);
-			os.remove(tarFile);
 			
 			# now schedule update to status list
 			self.svnRefreshStatus();

@@ -187,6 +187,10 @@ class SvnOperationProcess:
 		
 	# Abort process prematurely
 	def endProcess(self):
+		# sanity check: only need to do this for "running" processes
+		if self.status != ProcessStatus.STATUS_WORKING:
+			return;
+		
 		# kill process - only way to get rid of console apps on windows
 		self.process.kill();
 		
