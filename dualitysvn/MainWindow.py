@@ -65,6 +65,8 @@ class DualityWindow(QMainWindow):
 		# 2) tab panel
 		# TODO: should the various tabs only be created if/when they're needed instead?
 		self.wTabs = QTabWidget();
+		#self.wTabs.currentChanged.connect(project.setActiveTabIndex); # XXX: this does whenever tabs are modified, which is bad
+		
 		self.layout.addWidget(self.wTabs);
 		
 		# prepare the tab panels first
@@ -180,6 +182,8 @@ class DualityWindow(QMainWindow):
 	# - optional args are used to specify if only "smaller" cases occurred
 	# FIXME: this method needs a good rethink/recode???
 	def updateProjectWidgets(self, workingCopyChanged=False):
+		print "do update"
+		
 		# update titlebar
 		if project.autofile:
 			self.setWindowTitle("Duality SVN");
@@ -255,6 +259,12 @@ class DualityWindow(QMainWindow):
 				self.pBranching = NewBranchPanel();
 			self.wTabs.addTab(self.pBranching, "+");
 			self.wTabs.setTabToolTip(2, "Create new branch from Primary branch");
+			
+		# `````````````````````````
+		
+		# set active tab (from project)
+		print "setting tab index - %d, from - %d" % (project.activeTabIndex, self.wTabs.currentIndex())
+		self.wTabs.setCurrentIndex(project.activeTabIndex);
 	
 	# Project Settings -----------------------------------
 	

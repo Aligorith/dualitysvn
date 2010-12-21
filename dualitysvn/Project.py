@@ -28,6 +28,8 @@ class DualitySettings:
 		
 		'urlBranch',		# (str) url of "branch"
 		#'nameBranch', 	# (str) user-assigned name for "branch"
+		
+		'activeTabIndex',		# (int) active tab index
 	);
 	
 	# Setup =====================================
@@ -96,6 +98,9 @@ class DualitySettings:
 		# no branches by default!
 		self.urlBranch = None; 
 		
+		# active tab index
+		self.activeTabIndex = 0;
+		
 	# -----------------------
 	
 	# Load config file
@@ -111,6 +116,8 @@ class DualitySettings:
 			
 			# grab the values for the various parts
 			self.workingCopyDir = cfg.get("Project", "WorkingCopy");
+			self.activeTabIndex = cfg.getint("Project", "ActiveTabIndex");
+			print "active tab - r", cfg.getint("Project", "ActiveTabIndex"), 'n', self.activeTabIndex
 			
 			self.urlTrunk = cfg.get("Trunk", "url");
 			
@@ -125,6 +132,7 @@ class DualitySettings:
 		# load in the settings
 		cfg.add_section("Project");
 		cfg.set("Project", "WorkingCopy", self.workingCopyDir);
+		cfg.set("Project", "ActiveTabIndex", self.activeTabIndex);
 		
 		cfg.add_section("Trunk");
 		cfg.set("Trunk", "url", self.urlTrunk);
@@ -147,7 +155,7 @@ class DualitySettings:
 	def setWorkingCopyDir(self, value):
 		self.workingCopyDir = value;
 		self.unsaved = True;
-		
+	
 	# < value: (str) new value
 	def setUrlTrunk(self, value):
 		self.urlTrunk = value;
