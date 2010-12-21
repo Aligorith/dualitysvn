@@ -71,7 +71,10 @@ SvnOp_Args = {
 	'commit' :
 		['--force-log',
 		 #'-F', LOGFILE		# <--- these are added manually by commit code
-		]
+		],
+		
+	'cleanup':
+		[]
 };
 
 #######################################

@@ -181,6 +181,8 @@ class SvnOperationDialog(QDialog):
 			self.setWindowTitle(self.opName + " in Progress... - Duality SVN");
 		elif self.status == ProcessStatus.STATUS_DONE:
 			self.setWindowTitle(self.opName + " Done! - Duality SVN");
+		elif self.status == ProcessStatus.STATUS_CANCELLED:
+			self.setWindowTitle(self.opName + " is Stopping... Cleanup in progress - Duality SVN");
 		else:
 			self.setWindowTitle(self.opName + " Error! - Duality SVN");
 			
@@ -188,7 +190,22 @@ class SvnOperationDialog(QDialog):
 	def reject(self):
 		# stop active process
 		if self.pQ:
-			self.pQ[0].endProcess();
+			# stop head process
+			headP = self.pQ[0];
+			headP.endProcess();
+			
+			# create new process now to just cleanup
+			# - reuse environment that the last op was in
+			cp = SvnOperationProcess(self, "Cancelled Operation Cleanup");
+			cp.setupEnv(headP.process.processEnvironment);
+			
+			cp.setOp("cleanup");
+			cp.addDefaultArgs();
+			
+			# - run modal-blocking
+			print "Cancel cleanup..."
+			cp.runBlocking();
+			print "Cleanup done"
 		
 		# now, cancel the dialog using it's own version
 		super(SvnOperationDialog, self).reject();

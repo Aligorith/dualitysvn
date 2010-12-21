@@ -197,9 +197,7 @@ class SvnOperationProcess:
 		
 		# kill process - only way to get rid of console apps on windows
 		self.process.kill();
-		
-		# FIXME: should we have a "status killed"?
-		self.status = ProcessStatus.STATUS_DONE;
+		self.status = ProcessStatus.STATUS_CANCELLED;
 		
 		# refresh
 		self.doneProcess();
