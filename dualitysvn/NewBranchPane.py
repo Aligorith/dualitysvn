@@ -149,20 +149,23 @@ class NewBranchPanel(QWidget):
 		
 		# perform an "svn copy" operation to make a new branch on the repository
 		# 	WC + URL = instant commit 
-		print "Branching Commit Pending..."
-		cmd = 'svn co "%(sd)s" %(tar)s -m "%(cm)s"' % {'sd':srcdir, 'tar':target, 'cm':"Creating '%s' branch"%(branchName)}
-		bp = SvnOperationProcess(self, "Create Branch (Commit)");
+		bp = SvnOperationProcess(self, "Create New Branch (Commit)");
 		
-		bp.setupEnv(BranchType.TYPE_TRUNK); # can only branch from a "trunk
+		bp.setupEnv(BranchType.TYPE_TRUNK); # can only branch from a "trunk"
 		
 		bp.setOp("co");
 		bp.addArgs([srcdir, target]); # from, to
 		bp.addArgs(['-m', "Creating '%s' branch from'%s'\n\nCourtesy of Duality SVN" % (branchName, source)]); # commit log message
 		
+		
 		# change working copy to the branch now
 		print "Switching Working Copy to New Branch..."
-		cmd = 'svn switch %s' % (target)
-		#OSU_runCommand(cmd);
+		sp = SvnOperationProcess(self, "Switch Working Copy to New Branch");
+		
+		sp.setupEnv(BranchType.TYPE_TRUNK); # we're still in "trunk"
+		
+		sp.setOp("switch");
+		sp.addArgs([target]); # url to switch to
 
 	
 
