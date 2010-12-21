@@ -474,8 +474,6 @@ class BranchPanel(QWidget):
 		self.unimplementedFeatureCb("Create Patch");
 		
 	# perform SVN Commit
-	# TODO: 
-	# 	- directory read/write permissions issues...
 	def svnCommit(self):
 		# get list of files to change
 		files = self.statusListGetOperatable();
@@ -529,5 +527,23 @@ class BranchPanel(QWidget):
 			self.svnCommit();
 		else:
 			print "Cancelled reintegrate..."
+			
+	def svnCleanup(self):
+		# setup process
+		p1 = SvnOperationProcess(self, "Cleanup - Fix Metadata Errors");
+		p1.setupEnv(self.branchType);
+		
+		p1.setOp("cleanup");
+		p1.addDefaultArgs();
+		
+		# setup and run dialog
+		dlg = SvnOperationDialog(self, "Cleanup - Fix Metadata Errors");
+		
+		dlg.addProcess(p1);
+		
+		dlg.go();
+		
+		# now schedule update to status list
+		self.svnRefreshStatus();
 
 #########################################

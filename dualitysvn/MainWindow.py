@@ -126,6 +126,10 @@ class DualityWindow(QMainWindow):
 		self.aExit = QAction("E&xit", 
 			self, shortcut="Ctrl+Q", triggered=self.close);
 			
+		# edit -----------------------------------
+		self.aCleanup = QAction("&Cleanup (Fix SVN Errors)",
+			self, triggered=self.branchCleanup);
+			
 		# help -----------------------------------
 		self.aAbout = QAction("&About",
 			self, shortcut="F12", triggered=self.aboutInfo);
@@ -152,7 +156,7 @@ class DualityWindow(QMainWindow):
 		# 2) branch menu
 		self.mEditMenu = self.menuBar().addMenu("&Edit");
 		self.mEditMenu.addAction("Show Log"); # FIXME: placeholder
-		self.mEditMenu.addAction("Cleanup (Fix Errors)"); # FIXME: placeholder
+		self.mEditMenu.addAction(self.aCleanup);
 		self.mEditMenu.addAction("Edit Conflicts"); # FIXME: placeholder
 		
 		# 3) help menu
@@ -169,7 +173,7 @@ class DualityWindow(QMainWindow):
 		actPane = self.wTabs.currentWidget();
 		
 		# check if branch
-		if isinstance(actPane, BranchPane):
+		if isinstance(actPane, BranchPanel):
 			return actPane;
 		else:
 			return None;
@@ -401,6 +405,16 @@ class DualityWindow(QMainWindow):
 		else:
 			print "wc paths same"
 		
+	# Branch Tools --------------------------------------
+	
+	# Cleanup svn metadata
+	def branchCleanup(self):
+		# call the cleanup op on the branch (if available)
+		branch = self.getActiveBranchTab();
+		
+		if branch:
+			branch.svnCleanup();
+	
 	# System Info ---------------------------------------
 	
 	# about box
