@@ -24,10 +24,10 @@ class DualitySettings:
 		'workingCopyDir',	# (str) directory of working copy
 		
 		'urlTrunk',			# (str) url of "trunk"
-		#'nameTrunk',		# (str) user-assigned name for "trunk"
+		#'nameTrunk',			# (str) user-assigned name for "trunk"
 		
 		'urlBranch',		# (str) url of "branch"
-		#'nameBranch', 	# (str) user-assigned name for "branch"
+		'nameBranch', 		# (str) user-assigned name for "branch"
 		
 		'activeTabIndex',		# (int) active tab index
 	);
@@ -97,6 +97,7 @@ class DualitySettings:
 		
 		# no branches by default!
 		self.urlBranch = None; 
+		self.nameBranch = None;
 		
 		# active tab index
 		self.activeTabIndex = 0;
@@ -122,6 +123,7 @@ class DualitySettings:
 			
 			if cfg.has_section("Branch"):
 				self.urlBranch = cfg.get("Branch", "url");
+				self.nameBranch = cfg.get("Branch", "name");
 			
 	# Save config file
 	def save(self):
@@ -139,6 +141,7 @@ class DualitySettings:
 		if self.urlBranch:
 			cfg.add_section("Branch");
 			cfg.set("Branch", "url", self.urlBranch);
+			cfg.set("Branch", "name", self.nameBranch);
 			
 		# write settings to file
 		with open(self.fileN, 'wb') as cfgFile:
