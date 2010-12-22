@@ -117,7 +117,6 @@ class DualitySettings:
 			# grab the values for the various parts
 			self.workingCopyDir = cfg.get("Project", "WorkingCopy");
 			self.activeTabIndex = cfg.getint("Project", "ActiveTabIndex");
-			print "active tab - r", cfg.getint("Project", "ActiveTabIndex"), 'n', self.activeTabIndex
 			
 			self.urlTrunk = cfg.get("Trunk", "url");
 			
@@ -155,6 +154,11 @@ class DualitySettings:
 	def setWorkingCopyDir(self, value):
 		self.workingCopyDir = value;
 		self.unsaved = True;
+		
+	# < value: (int) new value
+	def setActiveTabIndex(self, value):
+		self.activeTabIndex = value;
+		# no need to set "unsaved" as this is more of a UI state only
 	
 	# < value: (str) new value
 	def setUrlTrunk(self, value):
