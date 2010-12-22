@@ -440,7 +440,7 @@ class BranchPanel(QWidget):
 		# filter list of files to NOT include externals or unversioned
 		def filterPredicate(item):
 			for k in ('?', 'X'):	
-				if self.file_status == SvnStatusListItem.FileStatusMap[k]:
+				if item.file_status == SvnStatusListItem.FileStatusMap[k]:
 					return False;
 			else:
 				return True;
