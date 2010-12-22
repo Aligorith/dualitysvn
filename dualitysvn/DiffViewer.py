@@ -61,5 +61,8 @@ class DiffViewer(QMainWindow):
 		# set as new contents
 		self.wDisplay.clear();
 		self.wDisplay.insertPlainText(txt);
+		
+		# now, scroll to start of text
+		self.wDisplay.moveCursor(QTextCursor.Start);
 
 #########################################
