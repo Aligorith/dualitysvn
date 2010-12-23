@@ -66,6 +66,9 @@ class DualitySettings:
 		
 		# create default filename otherwise...
 		if (fileN is None) and (addIfInvalid):
+			# clear all old project settings first
+			self.resetDefaults();
+			
 			# find current directory 
 			# - this is where the config file will be dumped
 			# - we capture it now, in case this changes due to later ops
