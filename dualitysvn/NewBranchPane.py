@@ -144,8 +144,9 @@ class NewBranchPanel(QWidget):
 		branchName = str(self.wName.text());
 		
 		# make a copy of the existing svn metadata - i.e. setup "trunk" copy as "branch2"
+		# TODO: make this attach to some process (dp)
 		print "Setting up Working Copy Duality..."
-		#duplicateSvnMetadata(srcdir);
+		duplicateSvnMetadata(srcdir);
 		
 		# perform an "svn copy" operation to make a new branch on the repository
 		# 	WC + URL = instant commit 
@@ -166,8 +167,20 @@ class NewBranchPanel(QWidget):
 		
 		sp.setOp("switch");
 		sp.addArgs([target]); # url to switch to
-
-	
+		
+		
+		# setup dialog to perform operations
+		dlg = SvnOperationDialog(self, "Create New Branch");
+		
+		#dlg.addProcess(dp);
+		dlg.addProcess(bp);
+		dlg.addProcess(sp);
+		
+		dlg.go();
+		
+		# send signal for updating branch tabs, but only if successful
+		if dlg.status == ProcessStatus.STATUS_FINISHED:
+			self.emit(SIGNAL('projectBranchesChanged()'));
 
 #########################################
 # Branch Checkout Panel

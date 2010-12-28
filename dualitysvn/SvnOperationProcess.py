@@ -173,7 +173,7 @@ class SvnOperationProcess:
 					"Could perform %s operation" % (self.opName));
 					
 			# set to "failed" status
-			self.status = self.status = ProcessStatus.STATUS_FAILED;
+			self.status = ProcessStatus.STATUS_FAILED;
 		else:
 			# disable start + enable stop buttons (if given)
 			if self.wStart and self.wEnd:
