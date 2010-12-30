@@ -29,7 +29,9 @@ class DualitySettings:
 		'urlBranch',		# (str) url of "branch"
 		'nameBranch', 		# (str) user-assigned name for "branch"
 		
-		'activeTabIndex',		# (int) active tab index
+		'activeTabIndex',	# (int) active tab index
+		
+		'skiplist',			# (list<str>) list of paths to ignore in our UI only - i.e. with temp changes we don't want shared yet
 	);
 	
 	# Setup =====================================
@@ -95,7 +97,7 @@ class DualitySettings:
 		# "src" dir living beside the project file
 		self.workingCopyDir = os.getcwd();		
 		
-		# example url - represents most common situations...
+		# trunk should be clear at startup - users can then set their own trunk
 		self.urlTrunk = None;
 		
 		# no branches by default!
@@ -104,6 +106,9 @@ class DualitySettings:
 		
 		# active tab index
 		self.activeTabIndex = 0;
+		
+		# list of files to ignore in status list (to protect local-only changes from accidental changes)
+		self.skiplist = set();
 		
 	# -----------------------
 	
@@ -127,6 +132,12 @@ class DualitySettings:
 			if cfg.has_section("Branch"):
 				self.urlBranch = cfg.get("Branch", "url");
 				self.nameBranch = cfg.get("Branch", "name");
+				
+			# load skiplist section
+			# 	- currently, this is just a section with a list of items without any values 
+			for name,val in cfg.items("Skip-List"):
+				self.skiplist.add(name);
+			
 			
 	# Save config file
 	def save(self):
@@ -145,6 +156,11 @@ class DualitySettings:
 			cfg.add_section("Branch");
 			cfg.set("Branch", "url", self.urlBranch);
 			cfg.set("Branch", "name", self.nameBranch);
+			
+		# skiplist section
+		cfg.add_section("Skip-List");
+		for path in self.skiplist:
+			cfg.set("Skip-List", path, None);
 			
 		# write settings to file
 		with open(self.fileN, 'wb') as cfgFile:
@@ -175,5 +191,11 @@ class DualitySettings:
 	def setUrlBranch(self, value):
 		self.urlBranch = value;
 		self.unsaved = True;
+		
+	# ------------------------------
+		
+	# < value: (str) path to add to list of paths to ignore
+	def addSkipPath(self, value):
+		self.skiplist.add(value);
 
 ##########################

@@ -341,10 +341,15 @@ class BranchPanel(QWidget):
 		
 		# 	get items..................
 		def store(sop, line):
-			# parse the output to create a new line, and add to model
 			if len(line):
+				# parse line to get a new status list item
 				item = SvnStatusListItem(line);
-				sop.model.add(item);
+				
+				# only add item if it isn't to be shown 
+				# - user may have marked paths to not be included to maintain a set of local only changes
+				# TODO: note how many items are being skipped?
+				if item.path not in project.skiplist:
+					sop.model.add(item);
 		rp.handleOutputCb = store;
 		
 		# go!
