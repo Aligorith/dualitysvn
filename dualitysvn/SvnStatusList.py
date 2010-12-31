@@ -85,6 +85,17 @@ class SvnStatusListItem:
 		else:
 			# by default (i.e. if nothing caught), this is on
 			self.defaultEnabled = True;
+			
+	# Utility Methods ==========================================
+	
+	# Check if path is a directory or file
+	# > returns: (bool) True if path is a directory
+	def isDir(self):
+		# get full pathname
+		fullPath = os.path.join(project.workingCopyDir, self.path);
+		
+		# check if this is a directory
+		return os.path.isdir(fullPath);
 
 #########################################
 # Reusable List Datatype
@@ -507,7 +518,9 @@ class SvnStatusList(QTreeView):
 	def dblClickHandler(self, index):
 		# get and show diff for file
 		item = self.model.getItem(index);
-		self.svnDiff(item);
+		
+		if self.canDiffItem(item, verbose=True):
+			self.svnDiff(item);
 	
 	# context-menu event override
 	def contextMenuEvent(self, event):
@@ -523,7 +536,8 @@ class SvnStatusList(QTreeView):
 		aAddSkip = None;
 		aFreeSkips = None;
 		
-		if item:
+		# - now the menu items
+		if self.canDiffItem(item):
 			aDiff = menu.addAction("Show changes (diff)");
 			menu.setDefaultAction(aDiff);
 		
@@ -554,6 +568,8 @@ class SvnStatusList(QTreeView):
 	
 	# Methods ===========================================
 	
+	# External API --------------------------------------
+	
 	# Get list of selected items to operate on
 	def getOperationList(self):
 		# just return a copy of the model's list...
@@ -562,9 +578,44 @@ class SvnStatusList(QTreeView):
 		else:
 			return self.model.listItems.copy();
 			
+	# SVN Diff Operation --------------------------------
+	
+	# Can a diff be performed on the given item?
+	# < item: (SvnStatusListItem) status list item to check
+	# < (verbose): (bool) True if messageboxes should be shown explaining why diff can't be done
+	# > returns: (bool) True if item can be diffed
+	def canDiffItem(self, item, verbose=False):
+		# sanity check
+		if item is None:
+			if verbose: 
+				QMessageBox.warning(self, "Show SVN Diff", "Internal error: no file to show diff for");
+			return False;
+			
+		# diffs cannot be performed on directories yet
+		# XXX: what about for directory properties?
+		if item.isDir():
+			if verbose: 
+				QMessageBox.warning(self, "Show SVN Diff", "Path is a directory not a file");
+			return False;
+			
+		# if only properties changed cannot diff?
+		# XXX: what about for file properties?
+		if item.file_status == SvnStatusListItem.FileStatusMap[' ']:
+			if verbose: 
+				QMessageBox.warning(self, "Show SVN Diff", "File hasn't changed. No changes to display");
+			return False;
+		elif item.file_status == SvnStatusListItem.FileStatusMap['?']:
+			if verbose: 
+				QMessageBox.warning(self, "Show SVN Diff", "File is unversioned. Cannot compare changes against thin air!");
+			return False;
+			
+		# should be ok now
+		# XXX: what about checking filetypes...
+		return True;
+	
 	# Get a diff for the file and display it
 	# < item: (SvnStatusListItem) status list item to show diff for
-	def svnDiff(self, item=None):
+	def svnDiff(self, item):
 		if item:
 			# run svn diff operation
 			# TODO: it might be better for performance to use QProcess to gradually update stuff...
