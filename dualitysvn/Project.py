@@ -121,6 +121,7 @@ class DualitySettings:
 		with open(self.fileN, 'r') as f:
 			# create parser, and read in the file
 			cfg = ConfigParser.SafeConfigParser();
+			cfg.optionxform = str # don't munge case!
 			cfg.readfp(f);
 			
 			# grab the values for the various parts
@@ -143,6 +144,7 @@ class DualitySettings:
 	def save(self):
 		# create parser
 		cfg = ConfigParser.SafeConfigParser();
+		cfg.optionxform = str # don't munge case!
 		
 		# load in the settings
 		cfg.add_section("Project");
