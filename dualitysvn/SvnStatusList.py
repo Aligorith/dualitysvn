@@ -447,6 +447,11 @@ class SvnStatusList(QTreeView):
 		self.setAlternatingRowColors(True);
 		self.setUniformRowHeights(True);
 		
+		# QAbstractItemView settings
+		# 	tweak for making long paths more useful:
+		#		- only the end of the name matters, so show dots on left to preserve end as much as possible
+		self.setTextElideMode(Qt.ElideLeft); 
+		
 		# double-click remapping
 		# - first line disables default "expand" behaviour, which causes crashes
 		# - second line hooks up event catcher to implement new dbl-click behaviour 
