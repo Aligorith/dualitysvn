@@ -207,6 +207,30 @@ class SvnStatusListItemModel(QAbstractItemModel):
 		# done updating
 		self.endInsertRows();
 		
+	# remove entry
+	def remove(self, item):
+		# get index for item, and use this to continue if valid
+		ind = self.index(item);
+		if ind.isValid() == False:
+			print "SvnStatusListItemModel doesn't have this item to remove"
+			return;
+			
+		# warn everyone to update
+		idx = ind.row();
+		self.beginRemoveRows(QModelIndex(), idx, idx);
+		
+		# remove item from lists
+		# 	- try catch is needed just in case item doesn't exist in one of these lists still
+		try:
+			self.listItems.remove(item);
+			self.checked.remove(item);
+		except:
+			pass;
+		
+		# done 
+		self.endRemoveRows();
+		
+		
 	# clear all entries
 	def clearAll(self):
 		# just do a remove of all
@@ -411,8 +435,12 @@ class SvnStatusList(QTreeView):
 	
 	# ctor
 	# < fileList: (SvnStatusListDatalist) list of items to populate model with
-	def __init__(self, fileList=None):
+	# < canBeModified: (bool) can the list of entries be modified by the user
+	def __init__(self, fileList=None, canBeModified=True):
 		super(SvnStatusList, self).__init__();
+		
+		# store settings
+		self.canBeModified = canBeModified;
 		
 		# view setup settings
 		self.setRootIsDecorated(False);
@@ -472,18 +500,51 @@ class SvnStatusList(QTreeView):
 	# double-click event handler -> get diff for file
 	# < index: (QModelIndex) the index of the item double-clicked on
 	def dblClickHandler(self, index):
-		# grab the item involved, then launch diff-viewer...
+		# get and show diff for file
 		item = self.model.getItem(index);
+		self.svnDiff(item);
+	
+	# context-menu event override
+	def contextMenuEvent(self, event):
+		# get item
+		index = self.indexAt(event.pos());
+		item = self.model.getItem(index);
+		
+		# create menu, and setup hooks to the various actions
+		menu = QMenu(self);
+		
+		# 	- dummy define all actions first
+		aDiff = None;
+		aAddSkip = None;
+		aFreeSkips = None;
+		
 		if item:
-			# run svn diff operation
-			# TODO: it might be better for performance to use QProcess to gradually update stuff...
-			args = ["svn", "diff", "--non-interactive", str(item.path)];
-			p = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=project.workingCopyDir);
+			aDiff = menu.addAction("Show changes (diff)");
+		
+		# - 'canBeModified' defines whether the list of items in the list can be changed by user actions
+		if self.canBeModified:
+			if item:
+				aAddSkip = menu.addAction("Hide Path as 'Local-Only Modification'");
 			
-			# show the log in some viewer dialog
-			diffView = DiffViewer(self);
-			diffView.displayDiff_fromString(p.stdout.read());
-			diffView.show();
+			aFreeSkips = menu.addAction("Show All 'Local-Only Modifications'");
+		
+		# process menu
+		if menu.isEmpty():
+			print "No actions for menu to show...", "Item exists under cursor?", item is not None 
+			return;
+		
+		action = menu.exec_(self.mapToGlobal(event.pos()))
+		
+		# handle events
+		if action == aDiff:
+			self.svnDiff(item);
+		elif action == aAddSkip:
+			project.addSkipPath(item.path);
+			self.emit(SIGNAL('skiplistChanged()'));
+		elif action == aFreeSkips:
+			project.clearSkipList();
+			self.emit(SIGNAL('skiplistChanged()'));
+
 	
 	# Methods ===========================================
 	
@@ -494,5 +555,19 @@ class SvnStatusList(QTreeView):
 			return self.model.checked.copy();
 		else:
 			return self.model.listItems.copy();
+			
+	# Get a diff for the file and display it
+	# < item: (SvnStatusListItem) status list item to show diff for
+	def svnDiff(self, item=None):
+		if item:
+			# run svn diff operation
+			# TODO: it might be better for performance to use QProcess to gradually update stuff...
+			args = ["svn", "diff", "--non-interactive", str(item.path)];
+			p = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=project.workingCopyDir);
+			
+			# show the log in some viewer dialog
+			diffView = DiffViewer(self);
+			diffView.displayDiff_fromString(p.stdout.read());
+			diffView.show();
 
 #########################################

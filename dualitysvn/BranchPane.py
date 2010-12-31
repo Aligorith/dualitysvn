@@ -119,6 +119,7 @@ class BranchPanel(QWidget):
 		# 3.1b) "toggle all" button
 		self.wToggleAllStatus = QPushButton("Toggle All");
 		self.wToggleAllStatus.setToolTip("Toggle whether all or none or the paths are included for editing (shown by checked status)");
+		
 		self.wToggleAllStatus.clicked.connect(self.statusToggleAll);
 		
 		gbox.addWidget(self.wToggleAllStatus, 1,3); # r1 c3
@@ -128,6 +129,7 @@ class BranchPanel(QWidget):
 		self.wRefreshStatus = QPushButton(QIcon.fromTheme("view-refresh"), "Refresh"); 
 		self.wRefreshStatus.setToolTip("Refresh the list of paths shown and their current versioning status");
 		self.wRefreshStatus.setFont(bfont);
+		
 		self.wRefreshStatus.clicked.connect(self.svnRefreshStatus);
 		
 		self.wRefreshStatus.setVisible(True);
@@ -136,6 +138,7 @@ class BranchPanel(QWidget):
 		# 3.1c2) "stop refresh" button - only visible when needed
 		self.wStopRefreshStatus = QPushButton("Stop");
 		self.wStopRefreshStatus.setToolTip("Stop refreshing the status list");
+		
 		#self.wStopRefreshStatus.clicked.connect(self.stopRefreshStatus); # NOTE: this is bound by the process as needed
 		
 		self.wStopRefreshStatus.setVisible(False);
@@ -143,7 +146,10 @@ class BranchPanel(QWidget):
 		
 		# 3.2) status list
 		self.wStatusView = SvnStatusList();
+		
 		self.wStatusView.clicked.connect(self.updateActionWidgets);
+		self.connect(self.wStatusView, SIGNAL('skiplistChanged()'), self.svnRefreshStatus);
+		
 		gbox.addWidget(self.wStatusView, 2,1, 1,4); # r2 c1, h1,w4
 		
 		# ...................

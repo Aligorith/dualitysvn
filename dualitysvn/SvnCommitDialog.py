@@ -67,7 +67,7 @@ class SvnCommitDialog(QDialog):
 		grp.addWidget(QLabel("For: " + branchName));
 		
 		# 1b) list of files - not editable
-		self.wFileList = SvnStatusList(filesList);
+		self.wFileList = SvnStatusList(filesList, canBeModified=False);
 		self.wFileList.setFocusPolicy(Qt.NoFocus); # otherwise, log mesage doesn't get focus
 		grp.addWidget(self.wFileList);
 		
