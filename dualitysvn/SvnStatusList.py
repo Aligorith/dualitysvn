@@ -520,6 +520,7 @@ class SvnStatusList(QTreeView):
 		
 		if item:
 			aDiff = menu.addAction("Show changes (diff)");
+			menu.setDefaultAction(aDiff);
 		
 		# - 'canBeModified' defines whether the list of items in the list can be changed by user actions
 		if self.canBeModified:
