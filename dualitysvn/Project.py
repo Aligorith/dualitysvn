@@ -147,7 +147,7 @@ class DualitySettings:
 		# load in the settings
 		cfg.add_section("Project");
 		cfg.set("Project", "WorkingCopy", self.workingCopyDir);
-		cfg.set("Project", "ActiveTabIndex", self.activeTabIndex);
+		cfg.set("Project", "ActiveTabIndex", str(self.activeTabIndex));
 		
 		cfg.add_section("Trunk");
 		cfg.set("Trunk", "url", self.urlTrunk);
@@ -160,7 +160,7 @@ class DualitySettings:
 		# skiplist section
 		cfg.add_section("Skip-List");
 		for path in self.skiplist:
-			cfg.set("Skip-List", path, None);
+			cfg.set("Skip-List", path, "");
 			
 		# write settings to file
 		with open(self.fileN, 'wb') as cfgFile:
@@ -195,6 +195,7 @@ class DualitySettings:
 	# ------------------------------
 		
 	# < value: (str) path to add to list of paths to ignore
+	# TODO: in future, store these with associated but still optional "reasons"
 	def addSkipPath(self, value):
 		self.skiplist.add(value);
 		self.unsaved = True;
