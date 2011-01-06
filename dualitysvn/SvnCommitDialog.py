@@ -80,8 +80,27 @@ class SvnCommitDialog(QDialog):
 		grp = QVBoxLayout();
 		gb.setLayout(grp);
 		
-		# 2a) choose from previous messages
-		# TODO...
+		# 2a) log saving...
+		#	- load message from text file
+		# 	- save current message
+		#	- auto log saving option and/or reload?
+		gbox = QGridLayout();
+		gbox.setSpacing(0);
+		grp.addLayout(gbox);
+		
+		self.wLoadMessage = QPushButton("Load...");
+		self.wLoadMessage.setToolTip("Load commit log from an existing file");
+		self.wLoadMessage.setFocusPolicy(Qt.NoFocus); # otherwise, log mesage doesn't get focus
+		self.wLoadMessage.clicked.connect(self.logLoadCb);
+		gbox.addWidget(self.wLoadMessage, 1,1); # r1 c1
+		
+		self.wSaveMessage = QPushButton("Save...");
+		self.wSaveMessage.setToolTip("Save commit log to a file (for later use)");
+		self.wSaveMessage.setFocusPolicy(Qt.NoFocus); # otherwise, log mesage doesn't get focus
+		self.wSaveMessage.clicked.connect(self.logSaveCb);
+		gbox.addWidget(self.wSaveMessage, 1,2); # r1 c2
+		
+		gbox.addItem(QSpacerItem(300, 0), 1,3); # just make the two buttons small...
 		
 		# 2b) log message box
 		self.wLog = QPlainTextEdit("");	
@@ -122,6 +141,35 @@ class SvnCommitDialog(QDialog):
 		else:
 			# already rejected...
 			pass;
+			
+	# ------------------------
+	
+	# log message loading
+	def logLoadCb(self):
+		# get new filename
+		fileName = QFileDialog.getOpenFileName(self, "Load Log Message",
+			".",
+			"Text Files (*.txt *.log)");
+		fileName = str(fileName);
+		
+		# set new filename, and try to load
+		if fileName:
+			# read file contents
+			with open(fileName, 'r') as f:
+				self.wLog.setPlainText(f.read());
+		
+	# log message saving
+	def logSaveCb(self):
+		# get new filename
+		fileName = QFileDialog.getSaveFileName(self, 
+				"Save File", 
+				".", 
+				"Text Files (*.txt *.log)");
+		fileName = str(fileName);
+				
+		# try to write to filename
+		if fileName:
+			self.saveLogMessage(fileName);
 		
 	# Methods ============================================
 	
