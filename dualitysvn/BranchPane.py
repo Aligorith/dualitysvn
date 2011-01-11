@@ -457,23 +457,39 @@ class BranchPanel(QWidget):
 				return True;
 		files = files.getFiltered(filterPredicate);
 		
-		# setup process
-		p1 = SvnOperationProcess(self, "Revert");
-		p1.setupEnv(self.branchType);
+		# user sanity check: user must prompt to allow this to happen,
+		# as this operation is destructive, and may be accidentally invoked
+		# on a few too many files
+		promptDlg = QMessageBox(QMessageBox.Question, "Revert", 
+			"Undo all local changes to these files? (Click 'Show Details...' to see this list)\nWarning: This operation cannot be undone", 
+			QMessageBox.Ok|QMessageBox.Cancel);
 		
-		p1.setOp("revert");
-		p1.addDefaultArgs();
-		p1.setTargets(files);
+		#	- show a list of path names that will be reverted
+		promptLogText = '\n'.join([item.path for item in files]); 
+		promptDlg.setDetailedText(promptLogText);
 		
-		# setup and run dialog
-		dlg = SvnOperationDialog(self, "Revert");
+		reply = promptDlg.exec_();
 		
-		dlg.addProcess(p1);
-		
-		dlg.go();
-		
-		# now schedule update to status list
-		self.svnRefreshStatus();
+		if reply == QMessageBox.Ok:
+			# setup process
+			p1 = SvnOperationProcess(self, "Revert");
+			p1.setupEnv(self.branchType);
+			
+			p1.setOp("revert");
+			p1.addDefaultArgs();
+			p1.setTargets(files);
+			
+			# setup and run dialog
+			dlg = SvnOperationDialog(self, "Revert");
+			
+			dlg.addProcess(p1);
+			
+			dlg.go();
+			
+			# now schedule update to status list
+			self.svnRefreshStatus();
+		else:
+			print "Prevent accidental revert! Yay!"
 	
 	def svnCreatePatch(self):
 		# get list of files to change
