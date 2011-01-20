@@ -230,6 +230,7 @@ copy of the current state of the repository.
 		gbox.addWidget(QLabel("URL:"), 1,1); # r1 c1
 		
 		# 2.2) directory field
+		# 	"file:///c:/path/to/repository" works too. Show this somehow?
 		self.wUrl = QLineEdit();
 		self.wUrl.setPlaceholderText("e.g. https://svnroot/project/my-branch");
 		self.wUrl.setToolTip("URL pointing to where the branch is stored in the SVN repository");
@@ -325,13 +326,41 @@ copy of the current state of the repository.
 	
 	# do the actual checkout
 	def svnCheckout(self):
-		QMessageBox.warning(self, 
-			"Checkout",
-			"Feature not yet implemented!");
+		# verify that the "working directory" specified exists
+		if os.path.exists(project.workingCopyDir) == False:
+			QMessageBox.warning(self, 
+				"Checkout...", 
+				"Working Copy Directory does not exist");
+			return;
+			
+		# get url
+		url = str(self.wUrl.text());
 		
 		# prepare SVN process
+		p1 = SvnOperationProcess(self, "Checkout");
+		p1.setupEnv(BranchType.TYPE_TRUNK); # we don't even have any branches yet!
+		
+		p1.setOp("checkout");
+		p1.addDefaultArgs();
+		p1.addArgs([url]);
+		
+		# setup and run dialog
+		dlg = SvnOperationDialog(self, "Checkout");
+		
+		dlg.addProcess(p1);
+		
+		dlg.go();
 		
 		# if successful, set project's new working copy + url settings
+		# XXX: what's going on with working copy dir now?
+		if dlg.status == ProcessStatus.STATUS_DONE:
+			project.urlTrunk = url;
+			
+			# send signal for updating branch tabs
+			self.emit(SIGNAL('projectBranchesChanged()'));
+			print "done"
+		else:
+			print "status = %d" % dlg.status
 		
 	# ...........................
 	

@@ -55,6 +55,9 @@ SvnOp_Args = {
 		
 	'update' :
 		['--accept', 'postpone'], 	# easiest conflict resolution method still is to manually fix in text editor 
+		
+	'checkout' :
+		['--force'],		# don't let conflict-errors abort the operation
 	
 	# With Target List ------------------------------
 	

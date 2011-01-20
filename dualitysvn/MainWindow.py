@@ -189,6 +189,8 @@ class DualityWindow(QMainWindow):
 		# update titlebar
 		if project.autofile:
 			self.setWindowTitle("Duality SVN");
+		elif project.unsaved:
+			self.setWindowtitle('%s* - Duality SVN' % os.path.split(project.fileN)[1]);
 		else:
 			self.setWindowTitle('%s - Duality SVN' % os.path.split(project.fileN)[1]);
 		
