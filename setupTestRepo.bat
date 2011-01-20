@@ -2,5 +2,7 @@
 @echo off
 
 mkdir .\testRepo\
+mkdir .\testRepo\working
+
 svnadmin create .\testRepo\repo
 
