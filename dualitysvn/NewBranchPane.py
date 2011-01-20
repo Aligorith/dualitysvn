@@ -230,10 +230,13 @@ copy of the current state of the repository.
 		gbox.addWidget(QLabel("URL:"), 1,1); # r1 c1
 		
 		# 2.2) directory field
-		# 	"file:///c:/path/to/repository" works too. Show this somehow?
 		self.wUrl = QLineEdit();
 		self.wUrl.setPlaceholderText("e.g. https://svnroot/project/my-branch");
-		self.wUrl.setToolTip("URL pointing to where the branch is stored in the SVN repository");
+		self.wUrl.setToolTip("""\
+URL pointing to the location of the branch of interest in the repository.
+For example:
+  - https://svnroot/project/my-branch
+  - file:///c:/path/to/repository/my-branch""");
 		self.wUrl.textChanged.connect(self.validateUrl);
 		
 		gbox.addWidget(self.wUrl, 1,2); # r1 c2
