@@ -5,6 +5,7 @@
 
 import os
 import ConfigParser
+import tempfile
 
 ##########################
 # Settings Container ("project")
@@ -22,6 +23,7 @@ class DualitySettings:
 		'unsaved',			# (bool) are there unsaved changes?
 		
 		'workingCopyDir',	# (str) directory of working copy
+		'tempFileDir',		# (str) directory where temporary files should get saved
 		
 		'urlTrunk',			# (str) url of "trunk"
 		#'nameTrunk',			# (str) user-assigned name for "trunk"
@@ -95,7 +97,10 @@ class DualitySettings:
 		self.unsaved = False;
 		
 		# "src" dir living beside the project file
-		self.workingCopyDir = os.getcwd();		
+		self.workingCopyDir = os.getcwd();	
+		
+		# "temp" dir should just be system default?
+		self.tempFileDir = tempfile.gettempdir();
 		
 		# trunk should be clear at startup - users can then set their own trunk
 		self.urlTrunk = None;
@@ -112,6 +117,8 @@ class DualitySettings:
 		
 	# -----------------------
 	
+	# TODO: error-proof this file io code!
+	
 	# Load config file
 	def load(self):
 		# reset defaults
@@ -126,6 +133,8 @@ class DualitySettings:
 			
 			# grab the values for the various parts
 			self.workingCopyDir = cfg.get("Project", "WorkingCopy");
+			if cfg.has_option("Project", "TempFiles"): self.tempFilesDir = cfg.get("Project", "TempFiles") # XXX: should wrap this
+			
 			self.activeTabIndex = cfg.getint("Project", "ActiveTabIndex");
 			
 			self.urlTrunk = cfg.get("Trunk", "url");
@@ -149,6 +158,8 @@ class DualitySettings:
 		# load in the settings
 		cfg.add_section("Project");
 		cfg.set("Project", "WorkingCopy", self.workingCopyDir);
+		cfg.set("Project", "TempFiles", self.tempFileDir);
+		
 		cfg.set("Project", "ActiveTabIndex", str(self.activeTabIndex));
 		
 		cfg.add_section("Trunk");
@@ -176,22 +187,27 @@ class DualitySettings:
 	
 	# < value: (str) new value
 	def setWorkingCopyDir(self, value):
-		self.workingCopyDir = value;
+		self.workingCopyDir = str(value);
+		self.unsaved = True;
+		
+	# < value: (str) new value
+	def setTempFileDir(self, value):	
+		self.tempFileDir = str(value);
 		self.unsaved = True;
 		
 	# < value: (int) new value
 	def setActiveTabIndex(self, value):
-		self.activeTabIndex = value;
+		self.activeTabIndex = int(value);
 		# no need to set "unsaved" as this is more of a UI state only
 	
 	# < value: (str) new value
 	def setUrlTrunk(self, value):
-		self.urlTrunk = value;
+		self.urlTrunk = str(value);
 		self.unsaved = True;
 		
 	# < value: (str) new value
 	def setUrlBranch(self, value):
-		self.urlBranch = value;
+		self.urlBranch = str(value);
 		self.unsaved = True;
 		
 	# ------------------------------
@@ -199,7 +215,7 @@ class DualitySettings:
 	# < value: (str) path to add to list of paths to ignore
 	# TODO: in future, store these with associated but still optional "reasons"
 	def addSkipPath(self, value):
-		self.skiplist.add(value);
+		self.skiplist.add(str(value));
 		self.unsaved = True;
 		
 	# clear out all entries from skip list
