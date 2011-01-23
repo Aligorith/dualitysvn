@@ -129,22 +129,23 @@ class DualitySettings:
 		
 		# grab filepointer
 		with open(self.fileN, 'r') as f:
-			# create parser, and read in the file
-			cfg = ConfigParser.SafeConfigParser();
-			cfg.optionxform = str # don't munge case!
+			# create parser
+			cfg = TameConfigParser();
+			
+			# read file to populate parser's buffer
 			cfg.readfp(f);
 			
 			# grab the values for the various parts
-			self.workingCopyDir = cfg.get("Project", "WorkingCopy");
-			if cfg.has_option("Project", "TempFiles"): self.tempFilesDir = cfg.get("Project", "TempFiles") # XXX: should wrap this
+			cfg.get("Project", "WorkingCopy", self, 'workingCopyDir');
+			cfg.get("Project", "TempFiles", self, 'tempFilesDir');
 			
-			self.activeTabIndex = cfg.getint("Project", "ActiveTabIndex");
+			cfg.getint("Project", "ActiveTabIndex", self, 'activeTabIndex');
 			
-			self.urlTrunk = cfg.get("Trunk", "url");
+			cfg.get("Trunk", "url", self, 'urlTrunk');
 			
 			if cfg.has_section("Branch"):
-				self.urlBranch = cfg.get("Branch", "url");
-				self.nameBranch = cfg.get("Branch", "name");
+				cfg.get("Branch", "url", self, 'urlBranch');
+				cfg.get("Branch", "name", self, 'nameBranch');
 				
 			# load skiplist section
 			# 	- currently, this is just a section with a list of items without any values 
@@ -155,15 +156,14 @@ class DualitySettings:
 	# Save config file
 	def save(self):
 		# create parser
-		cfg = ConfigParser.SafeConfigParser();
-		cfg.optionxform = str # don't munge case!
+		cfg = TameConfigParser()
 		
 		# load in the settings
 		cfg.add_section("Project");
 		cfg.set("Project", "WorkingCopy", self.workingCopyDir);
 		cfg.set("Project", "TempFiles", self.tempFileDir);
 		
-		cfg.set("Project", "ActiveTabIndex", str(self.activeTabIndex));
+		cfg.set("Project", "ActiveTabIndex", self.activeTabIndex);
 		
 		cfg.add_section("Trunk");
 		cfg.set("Trunk", "url", self.urlTrunk);
@@ -234,13 +234,13 @@ class DualitySettings:
 class TameConfigParser(ConfigParser.SafeConfigParser):
 	# Setup ==========================================================
 	
-	# < (parent): object that we're reading stuff for
-	def __init__(self, parent=None):
+	def __init__(self):
 		# init internal reference 
-		super(self.__class__, self).__init__();
+		#super(TameConfigParser, self).__init__(); # XXX: why doesn't this work!
+		ConfigParser.SafeConfigParser.__init__(self);
 		
 		# set all the settings we need to make it tame
-		cfg.optionxform = str # don't munge case!
+		self.optionxform = str # don't munge case!
 	
 	# Exceptions Supressed Wrapper Methods ============================
 	
@@ -253,7 +253,7 @@ class TameConfigParser(ConfigParser.SafeConfigParser):
 	def _get_helper(self, section, option, getCb, targetObj=None, targetVar=None):
 		# try to get value from backend
 		if self.has_option(section, option):
-			val = getCb(section, option);
+			val = getCb(self, section, option);
 		else:
 			val = None;
 		
@@ -264,28 +264,34 @@ class TameConfigParser(ConfigParser.SafeConfigParser):
 		else:
 			return val;
 	
+	# .........
+	
 	# safety wrapper around standard get()
 	def get(self, section, option, targetObj=None, targetVar=None):
 		return self._get_helper(section, option, 
-				super(self.__class__, self).get, 
+				#super(type(self), self).get,  # XXX: why doesn't this work!
+				ConfigParser.SafeConfigParser.get, 
 				targetObj, targetVar);
 				
 	# safety wrapper around standard getint()
 	def getint(self, section, option, targetObj=None, targetVar=None):
 		return self._get_helper(section, option,
-				super(self.__class__, self).getint,
+				#super(type(self), self).getint, # XXX: why doesn't this work!
+				ConfigParser.SafeConfigParser.getint,
 				targetObj, targetVar);
 				
 	# safety wrapper around standard getfloat()
 	def getfloat(self, section, option, targetObj=None, targetVar=None):
 		return self._get_helper(section, option,
-				super(self.__class__, self).getfloat,
+				#super(type(self), self).getfloat, # XXX: why doesn't this work!
+				ConfigParser.SafeConfigParser.getfloat,
 				targetObj, targetVar);
 				
 	# safety wrapper around standard getboolean()
 	def getboolean(self, section, option, targetObj=None, targetVar=None):
 		return self._get_helper(section, option,
-				super(self.__class__, self).getboolean,
+				#super(type(self), self).getboolean, # XXX: why doesn't this work!
+				ConfigParser.SafeConfigParser.getboolean,
 				targetObj, targetVar);
 		
 	# Setters -----------------------------------------------------------
@@ -294,7 +300,8 @@ class TameConfigParser(ConfigParser.SafeConfigParser):
 	# and the section has been validated
 	def set(self, section, option, value):
 		if self.has_section(section):
-			super(self.__class__, self).set(section, option, str(value));
+			#super(type(self), self).set(section, option, str(value)); # XXX: why doesn't this work!
+			ConfigParser.SafeConfigParser.set(self, section, option, str(value));
 		else:
 			print "Config I/O ERROR: Trying to set value in non-existing section... (%s)" % (section)
 			traceback.print_stack();
