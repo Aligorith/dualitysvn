@@ -4,8 +4,11 @@
 # Project Settings
 
 import os
-import ConfigParser
 import tempfile
+
+import ConfigParser
+
+import traceback
 
 ##########################
 # Settings Container ("project")
@@ -224,5 +227,77 @@ class DualitySettings:
 		if len(self.skiplist):
 			self.skiplist.clear();
 			self.unsaved = True;
+
+##########################
+# Config Parser that doesn't throw up on errors
+
+class TameConfigParser(ConfigParser.SafeConfigParser):
+	# Setup ==========================================================
+	
+	# < (parent): object that we're reading stuff for
+	def __init__(self, parent=None):
+		# init internal reference 
+		super(self.__class__, self).__init__();
+		
+		# set all the settings we need to make it tame
+		cfg.optionxform = str # don't munge case!
+	
+	# Exceptions Supressed Wrapper Methods ============================
+	
+	# Getters ---------------------------------------------------------
+	
+	# we can only 'get' the value of an existing item 
+	# < getCb: (fn(cfg, section, option)) callback used for actually getting the value
+	# < (targetObj/targetVar): when defined (BOTH need to be together), then the value is read directly
+	#		into the variable named by "targetVar" in "targetObj"
+	def _get_helper(self, section, option, getCb, targetObj=None, targetVar=None):
+		# try to get value from backend
+		if self.has_option(section, option):
+			val = getCb(section, option);
+		else:
+			val = None;
+		
+		# if both settings for where to set the value are given, perform the setting
+		if targetObj and targetVar:
+			# try to set by hacking through the dict, which should always be available
+			targetObj.__dict__[targetVar] = val;
+		else:
+			return val;
+	
+	# safety wrapper around standard get()
+	def get(self, section, option, targetObj=None, targetVar=None):
+		return self._get_helper(section, option, 
+				super(self.__class__, self).get, 
+				targetObj, targetVar);
+				
+	# safety wrapper around standard getint()
+	def getint(self, section, option, targetObj=None, targetVar=None):
+		return self._get_helper(section, option,
+				super(self.__class__, self).getint,
+				targetObj, targetVar);
+				
+	# safety wrapper around standard getfloat()
+	def getfloat(self, section, option, targetObj=None, targetVar=None):
+		return self._get_helper(section, option,
+				super(self.__class__, self).getfloat,
+				targetObj, targetVar);
+				
+	# safety wrapper around standard getboolean()
+	def getboolean(self, section, option, targetObj=None, targetVar=None):
+		return self._get_helper(section, option,
+				super(self.__class__, self).getboolean,
+				targetObj, targetVar);
+		
+	# Setters -----------------------------------------------------------
+	
+	# safety wrapper around "set()" method, which ensures that only strings get written
+	# and the section has been validated
+	def set(self, section, option, value):
+		if self.has_section(section):
+			super(self.__class__, self).set(section, option, str(value));
+		else:
+			print "Config I/O ERROR: Trying to set value in non-existing section... (%s)" % (section)
+			traceback.print_stack();
+	
 
 ##########################
