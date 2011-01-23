@@ -225,9 +225,10 @@ class SvnOperationProcess:
 			print "StdOut>>", line
 	
 	# read error messages from process
-	def readErrors(self):
+	def readErrors(self, needsSwap=True):
 		# switch to stderr channel to read, then switch back
-		self.process.setReadChannel(QProcess.StandardError);
+		if needsSwap:
+			self.process.setReadChannel(QProcess.StandardError);
 		
 		line = str(self.process.readLine()).rstrip("\n");
 		
@@ -235,6 +236,22 @@ class SvnOperationProcess:
 			self.handleErrorCb(self, line);
 		else:
 			print "StdErr>>", line
+		
+		if needsSwap:
+			self.process.setReadChannel(QProcess.StandardOutput);
+		
+	# read rest of output from process
+	def readRemaining(self):
+		# standard output
+		while self.process.canReadLine():
+			self.readOutput();
+			
+		# standard error
+		# 	-  need to change read channel so that we can read this 
+		self.process.setReadChannel(QProcess.StandardError);
+		
+		while self.process.canReadLine():
+			self.readErrors(False);
 		
 		self.process.setReadChannel(QProcess.StandardOutput);
 		
@@ -265,14 +282,10 @@ class SvnOperationProcess:
 	# callback called when svn operation process ends
 	def processEnded(self, exitCode, exitStatus):
 		# grab rest of output
-		while self.process.canReadLine():
-			self.readOutput();
-		
-		# TODO: grab rest of errors?
+		self.readRemaining();
 		
 		# if exited with some problem, make sure we warn
-		# TODO: also keep track of other status too...
-		if exitStatus == QProcess.CrashExit:
+		if (exitStatus == QProcess.CrashExit) or (self.process.exitCode() != 0):
 			# broadcast error with a msgbox?
 			if not self.silentErrors:
 				QMessageBox.warning(self.parent,

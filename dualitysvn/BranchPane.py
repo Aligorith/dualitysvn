@@ -547,7 +547,9 @@ class BranchPanel(QWidget):
 			# now schedule update to status list
 			self.svnRefreshStatus();
 		else:
+			# TODO: cancel any lingering log messaes?
 			print "Commit cancelled..."
+			
 		
 	def svnReintegrate(self):
 		# this is destructive, so must ask for confirmation in case of error

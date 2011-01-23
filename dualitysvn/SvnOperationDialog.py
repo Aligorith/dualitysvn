@@ -137,8 +137,8 @@ class SvnOperationDialog(QDialog):
 			
 			# if didn't end with failure, try to start up next procedure
 			#	- stop the process if anything else happens
-			if (sop.status == ProcessStatus.STATUS_FAILED) or \
-			   (sop.parent.startHeadProcess() == False):
+			if ((sop.status == ProcessStatus.STATUS_FAILED) or 
+			    (sop.parent.startHeadProcess() == False)):
 				# no more processes to start, or cannot start any more, so tidy up and let user get out of here
 				self.status = sop.status;
 				
