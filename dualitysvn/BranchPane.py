@@ -535,7 +535,14 @@ class BranchPanel(QWidget):
 			dlg2.go();
 			
 			# cleanup temp files
-			os.remove(logFile);
+			# 	- for failed commits, we keep the logs around in case they are useful for a retry
+			#	  but user cancelling or process being completed SHOULD clean up...
+			# TODO: make user-pref setting for this?
+			if dlg2.status != ProcessStatus.STATUS_FAILED:
+				print "clearing log file"
+				os.remove(logFile);
+			else:
+				print "not clearing log file"
 			
 			# now schedule update to status list
 			self.svnRefreshStatus();

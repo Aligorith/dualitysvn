@@ -52,7 +52,8 @@ class SvnCommitDialog(QDialog):
 		
 		self.setupUI(branchName, filesList);
 		
-		self.validateMessageLength();
+		self.loadLogMessage(); 			# auto-load last log message if previous commit failed
+		self.validateMessageLength(); 	# make sure button enabled status is shown properly
 		
 	# main widget init
 	def setupUI(self, branchName, filesList):
@@ -152,11 +153,10 @@ class SvnCommitDialog(QDialog):
 			"Text Files (*.txt *.log)");
 		fileName = str(fileName);
 		
-		# set new filename, and try to load
+		# try to load...
+		# TODO: try to hang on to this filename, so that the saving function is more useful?
 		if fileName:
-			# read file contents
-			with open(fileName, 'r') as f:
-				self.wLog.setPlainText(f.read());
+			self.loadLogMessage();
 		
 	# log message saving
 	def logSaveCb(self):
@@ -175,17 +175,23 @@ class SvnCommitDialog(QDialog):
 	
 	# Log Message ----------------------------------------
 	
-	# get log message as a text string
+	# get file name for temporary log messages
+	def getTempLogFileName(self):
+		return os.path.join(project.tempFileDir, SvnCommitDialog.LOG_FILENAME);
+	
+	# ........................
+	
+	# get (current) log message as a text string
 	def getLogMessage(self):
 		return self.wLog.toPlainText();
 		
-	# write log message to a temp file, and return its path/name
+	# write (current) log message to a temp file, and return its full path
 	# fileN: (str) if provided, this will be the name of the file to save to
 	#			 otherwise, defaults to SvnCommitDialog.LOG_FILENAME
 	def saveLogMessage(self, fileN=None):
 		# open file for writing
 		if fileN == None:
-			fileN = SvnCommitDialog.LOG_FILENAME;
+			fileN = self.getTempLogFileName();
 			
 		with open(fileN, "w") as f:
 			# grab the log message and split into paragraphs (by line breaks)
@@ -204,9 +210,25 @@ class SvnCommitDialog(QDialog):
 			# finish up
 			f.close();
 		
-		# return full path name
-		# FIXME: the directory where this gets dumped should be user defined
-		return os.path.join(os.getcwd(), fileN);
+		# return full path name (which fileN should now be)
+		return fileN;
+		
+	# load log message from a file
+	# fileN: (str) if provided, this will be the name of the file to save to
+	#			 otherwise, defaults to SvnCommitDialog.LOG_FILENAME (i.e. try to load log for failed commit)
+	def loadLogMessage(self, fileN=None):
+		# failed commit case: auto-reload log message from that case
+		# TODO: make user-pref setting for this?
+		if fileN == None:
+			fileN = self.getTempLogFileName();
+			
+		# validate that file actually exists
+		if os.path.exists(fileN):
+			# open file
+			with open(fileN, 'r') as f:
+				self.wLog.setPlainText(f.read());
+		else:
+			print "Log message doesn't exist - '%s'" % fileN;		
 	
 	# Path List Validation ------------------------------------
 	
