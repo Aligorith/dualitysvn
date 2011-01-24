@@ -155,7 +155,7 @@ class DualityWindow(QMainWindow):
 		
 		# 2) branch menu
 		self.mEditMenu = self.menuBar().addMenu("&Edit");
-		self.mEditMenu.addAction("Show Log"); # FIXME: placeholder
+		#self.mEditMenu.addAction("Show Log"); # FIXME: placeholder
 		self.mEditMenu.addAction(self.aCleanup);
 		self.mEditMenu.addAction("Edit Conflicts"); # FIXME: placeholder
 		

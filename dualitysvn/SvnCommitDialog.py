@@ -246,9 +246,9 @@ class SvnCommitDialog(QDialog):
 		if needAdd or needDelete or needResolve:
 			# prompt to do cleanups
 			msg  = "The following changes will be performed so that committing can proceed:\n\n";
-			msg += '  ' + str(len(needAdd)) + " <b>unversioned</b> paths need to be <b>Added</b>\n";
-			msg += '  ' + str(len(needDelete)) + " <b>missing</b> paths need to be <b>Deleted</b>\n";
-			msg += '  ' + str(len(needResolve)) + " <b>conflicted</b> paths need to be <b>Resolved</b>\n";
+			msg += '  ' + str(len(needAdd)) + " [Unversioned] paths need to be ||Added||\n";
+			msg += '  ' + str(len(needDelete)) + " [Missing] paths need to be ||Deleted||\n";
+			msg += '  ' + str(len(needResolve)) + " [Conflicted] paths need to be ||Resolved||\n";
 			msg += "\nApply these changes?";
 			
 			reply = QMessageBox.question(self, 'Confirm Changes',

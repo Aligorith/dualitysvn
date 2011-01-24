@@ -235,8 +235,12 @@ class BranchPanel(QWidget):
 				self.wUrl.setText("");
 			self.wUrl.setReadOnly(False);
 		
-		# clear status list
-		self.wStatusView.model.clearAll();
+		# update status list
+		# 	- it's better to update and have a list of items when the tab is shown,
+		#	  rather than requiring the user to do so, though this may cause performance
+		#	  troubles in the long run...
+		#self.wStatusView.model.clearAll();
+		self.svnRefreshStatus();
 		self.updateActionWidgets();
 	
 	# change the type of branch
