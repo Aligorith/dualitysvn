@@ -143,10 +143,20 @@ class NewBranchPanel(QWidget):
 		target = str(self.wNewUrl.text());
 		branchName = str(self.wName.text());
 		
+		# clean up svn metadata in existing working copy (to reduce amount of junk we port across)
+		cp = SvnOperationProcess(self, "Pre-creation Cleanup");
+		
+		cp.setupEnv(BranchType.TYPE_TRUNK); # we've only got "trunk" so far
+		
+		cp.setOp("cleanup");
+		cp.setDefaultArgs();
+		
+		
 		# make a copy of the existing svn metadata - i.e. setup "trunk" copy as "branch2"
 		# TODO: make this attach to some process (dp)
 		print "Setting up Working Copy Duality..."
 		duplicateSvnMetadata(srcdir);
+		
 		
 		# perform an "svn copy" operation to make a new branch on the repository
 		# 	WC + URL = instant commit 
@@ -172,6 +182,7 @@ class NewBranchPanel(QWidget):
 		# setup dialog to perform operations
 		dlg = SvnOperationDialog(self, "Create New Branch");
 		
+		dlg.addProcess(cp);
 		#dlg.addProcess(dp);
 		dlg.addProcess(bp);
 		dlg.addProcess(sp);
