@@ -127,9 +127,10 @@ class BranchPanel(QWidget):
 		# 3.1c) "refresh" button
 		# FIXME: need icons...
 		self.wRefreshStatus = QPushButton(QIcon.fromTheme("view-refresh"), "Refresh"); 
-		self.wRefreshStatus.setToolTip("Refresh the list of paths shown and their current versioning status");
+		self.wRefreshStatus.setToolTip("Refresh the list of paths shown and their current versioning status (<i>F5</i>)");
 		self.wRefreshStatus.setFont(bfont);
 		
+		self.wRefreshStatus.setShortcut(QKeySequence.fromString("F5"));
 		self.wRefreshStatus.clicked.connect(self.svnRefreshStatus);
 		
 		self.wRefreshStatus.setVisible(True);
@@ -137,8 +138,9 @@ class BranchPanel(QWidget):
 		
 		# 3.1c2) "stop refresh" button - only visible when needed
 		self.wStopRefreshStatus = QPushButton("Stop");
-		self.wStopRefreshStatus.setToolTip("Stop refreshing the status list");
+		self.wStopRefreshStatus.setToolTip("Stop refreshing the status list (<i>ESC</i>)");
 		
+		self.wStopRefreshStatus.setShortcut(QKeySequence.fromString("Esc"));
 		#self.wStopRefreshStatus.clicked.connect(self.stopRefreshStatus); # NOTE: this is bound by the process as needed
 		
 		self.wStopRefreshStatus.setVisible(False);
