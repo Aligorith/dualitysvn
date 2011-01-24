@@ -145,14 +145,11 @@ class SvnStatusListDatalist(list):
 	# get filename
 	# < (opName): (str) optional name of the SVN operation which 
 	def getPathsFileName(self, opName=None):
-		# FIXME: the directory where this gets dumped should be user defined
-		dirN = os.getcwd();
-		
 		# include the operation name if provided, to avoid clashes on chained ops
 		if opName:
-			fileN = os.path.join(dirN, opName + '_' + SvnStatusListDatalist.TARGETS_FILENAME);
+			fileN = os.path.join(project.tempFileDir, opName + '_' + SvnStatusListDatalist.TARGETS_FILENAME);
 		else:
-			fileN = os.path.join(dirN, SvnStatusListDatalist.TARGETS_FILENAME);
+			fileN = os.path.join(project.tempFileDir, SvnStatusListDatalist.TARGETS_FILENAME);
 			
 		return fileN;
 	
