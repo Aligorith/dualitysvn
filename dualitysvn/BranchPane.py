@@ -420,30 +420,67 @@ class BranchPanel(QWidget):
 			return;
 		
 		# filter list of files to only include added, conflicted, modified, replaced, or missing
+		# i.e. those under version control
 		def filterPredicate(item):
 			for k in ('A', 'C', 'M', 'R', '!'):	
-				if self.file_status == SvnStatusListItem.FileStatusMap[k]:
+				if item.file_status == SvnStatusListItem.FileStatusMap[k]:
 					return True;
 			else:
 				return False;
 		files = files.getFiltered(filterPredicate);
 		
-		# setup process
-		# TODO: what happens for the other branch?
-		p1 = SvnOperationProcess(self, "Delete");
-		p1.setupEnv(self.branchType);
-		
-		p1.setOp("delete");
-		p1.addDefaultArgs();
-		p1.setTargets(files);
-		
-		# setup and run dialog
-		dlg = SvnOperationDialog(self, "Delete");
-		
-		dlg.addProcess(p1);
-		
-		dlg.go();
-		
+		# remove versioned files (those still in files list)?
+		if len(files):
+			# setup process to remove versioned files
+			# TODO: what happens for the other branch?
+			p1 = SvnOperationProcess(self, "Delete");
+			p1.setupEnv(self.branchType);
+			
+			p1.setOp("delete");
+			p1.addDefaultArgs();
+			p1.setTargets(files);
+			
+			# setup and run dialog
+			dlg = SvnOperationDialog(self, "Delete");
+			
+			dlg.addProcess(p1);
+			
+			dlg.go();
+		else:
+			# all files were unversioned, so we're removing files that are mostly no-longer in repository
+			# but which are still lingering around for some reason or another. Hence, warn about this.
+			if project.urlBranch:
+				# XXX
+				warnMsg = "These files may contain work relevant to another branch";
+			else:
+				warnMsg = "These may contain uncommitted work in progress (or may have been removed from the repository).";
+			
+			reply = QMessageBox.question(self, 'Delete (Remove Unversioned)',
+				"Are you sure you want to permanently erase all these unversioned files?\n"+warnMsg, 
+				QMessageBox.Yes | QMessageBox.No, 
+				QMessageBox.No);
+				
+			if reply == QMessageBox.Yes:
+				# grab list of unversioned files again, since they've now been oblitterated
+				files = self.statusListGetOperatable();
+				
+				# setup process to remove unversioned files
+				# TODO: what happens for the other branch?
+				p1 = SvnOperationProcess(self, "Delete");
+				p1.setupEnv(self.branchType);
+				
+				p1.setOp("delete");
+				p1.addDefaultArgs();
+				p1.addArgs(['--force']);
+				p1.setTargets(files);
+				
+				# setup and run dialog
+				dlg = SvnOperationDialog(self, "Delete (Remove Unversioned)");
+				
+				dlg.addProcess(p1);
+				
+				dlg.go();
+			
 		# now schedule update to status list
 		self.svnRefreshStatus();
 		
