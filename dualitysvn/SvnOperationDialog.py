@@ -78,6 +78,7 @@ class SvnOperationDialog(QDialog):
 		# 1a) progress log box
 		#self.wStatus = SvnOperationList(); # FIXME: restore this when it's completed
 		self.wStatus = QPlainTextEdit("");
+		self.wStatus.setReadOnly(True);
 		grp.addWidget(self.wStatus, 1,1); # r1 c1
 		
 		# 1b) progress bar?
@@ -113,16 +114,24 @@ class SvnOperationDialog(QDialog):
 		
 		# output redirection callbacks
 		def pushOutput(sop, line):
-			# insert adds without extra line padding, then scroll to this point 
+			# insert adds without extra line padding, then scroll to this point
+			sop.wTarget.setReadOnly(False);
+			
 			sop.wTarget.insertPlainText(line);
 			sop.wTarget.ensureCursorVisible();
+			
+			sop.wTarget.setReadOnly(True);
 		process.handleOutputCb = pushOutput;
 		
 		def pushErrors(sop, line):
 			# insert adds without extra line padding, then scroll to this point 
 			# TODO: errors should be tagged with red-text or so...
+			sop.wTarget.setReadOnly(False);
+			
 			sop.wTarget.insertPlainText(line);
 			sop.wTarget.ensureCursorVisible();
+			
+			sop.wTarget.setReadOnly(True);
 		process.handleErrorCb = pushErrors;
 			
 		# process chaining callbacks
