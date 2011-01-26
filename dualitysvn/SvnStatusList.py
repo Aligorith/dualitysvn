@@ -421,11 +421,19 @@ class SvnStatusListItemModel(QAbstractItemModel):
 	# < col: (int) column to sort by
 	# < order: (QtCore.Qt.SortOrder/int) order to sort entries in
 	def sort(self, col, order = Qt.AscendingOrder):
+		# tell world that we're about to be doing stuff
+		# XXX: is tis the right method to use?
+		self.beginResetModel();
+		
 		# column index defines the key function used
+		# 	- the first part of the key defines the primary method for sorting, though the 
+		#	  latter ones are also included to act as differentiators to try to produce
+		#	  more consistent results between sorts
+		#	- property status is ignored for now, since it is not very important for most cases
 		keyFuncs = (
-			lambda x: x.path,
-			lambda x: x.file_status,
-			lambda x: x.prop_status
+			lambda x: x.path        + x.file_status,
+			lambda x: x.file_status + x.path,
+			lambda x: x.prop_status + x.path
 		);
 		
 		# perform a reverse-order sort?
@@ -433,6 +441,9 @@ class SvnStatusListItemModel(QAbstractItemModel):
 		
 		# sort the internal list
 		self.listItems.sort(key=keyFuncs[col], reverse=rev); 
+		
+		# done!
+		self.endResetModel(); 
 
 #########################################
 # UI Widget
