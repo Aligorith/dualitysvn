@@ -6,6 +6,7 @@
 from coreDefines import *
 
 from DiffViewer import *
+from SvnOperationProcess import *
 
 #########################################
 # List Item Datatypes
@@ -613,15 +614,44 @@ class SvnStatusList(QTreeView):
 	# Get a diff for the file and display it
 	# < item: (SvnStatusListItem) status list item to show diff for
 	def svnDiff(self, item):
-		if item:
-			# run svn diff operation
-			# TODO: it might be better for performance to use QProcess to gradually update stuff...
-			args = ["svn", "diff", "--non-interactive", str(item.path)];
-			p = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=project.workingCopyDir);
-			
-			# show the log in some viewer dialog
-			diffView = DiffViewer(self);
-			diffView.displayDiff_fromString(p.stdout.read());
-			diffView.show();
+		# sanity check
+		if item is None:
+			return;
+		
+		# setup process for svn diff operation
+		process = SvnOperationProcess(self, "Diff");
+		branchType = BranchType.TYPE_TRUNK; # XXX: FIXME!!! we need a way of getting this, but the old way we used didn't do this either!
+		process.setupEnv(branchType);
+		
+		process.setOp("diff");
+		process.addDefaultArgs();
+		process.addArgs([str(item.path)]);
+		
+		
+		# set up viewer dialog
+		diffView = DiffViewer(self);
+		
+		
+		# hook up output redirection code
+		# - output gets stored to a temp list as the "model"
+		process.model = [];
+		# - viewer dialog is used as the "target", for the final stage
+		process.wTarget = diffView;
+		
+		def pushOutput(sop, line):
+			sop.model.append(line);
+		process.handleOutputCb = pushOutput;
+		
+		# - when process exits, diff viewer should be given the concatenated output text (from the model), and then get shown
+		def procDone(sop):
+			sop.wTarget.displayDiff_fromString('\n'.join(sop.model));
+			sop.wTarget.show();
+		process.postEndCb = procDone;
+		
+		
+		# run process (dialog gets shown while this happens)
+		#	- this is run in a blocking manner, since there's no way to cancel this operation
+		#	  from UI, and user probably won't expect anything else
+		process.runBlocking();
 
 #########################################

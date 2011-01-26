@@ -77,6 +77,9 @@ SvnOp_Args = {
 		],
 		
 	'cleanup':
+		[],
+		
+	'diff':
 		[]
 };
 
