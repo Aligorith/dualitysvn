@@ -124,14 +124,23 @@ class SvnOperationDialog(QDialog):
 		process.handleOutputCb = pushOutput;
 		
 		def pushErrors(sop, line):
+			# grab current formatting info so that we can add red text
+			cTFormat = sop.wTarget.currentCharFormat();
+			
+			eTFormat = QTextCharFormat(cTFormat);
+			eTFormat.setForeground(Qt.red);
+			sop.wTarget.setCurrentCharFormat(eTFormat);
+			
 			# insert adds without extra line padding, then scroll to this point 
-			# TODO: errors should be tagged with red-text or so...
 			sop.wTarget.setReadOnly(False);
 			
 			sop.wTarget.insertPlainText(line);
 			sop.wTarget.ensureCursorVisible();
 			
 			sop.wTarget.setReadOnly(True);
+			
+			# reset original text colouring
+			sop.wTarget.setCurrentCharFormat(cTFormat);
 		process.handleErrorCb = pushErrors;
 			
 		# process chaining callbacks
