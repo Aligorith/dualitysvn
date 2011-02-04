@@ -533,12 +533,11 @@ class SvnStatusList(QTreeView):
 			
 	# handle hotkeys 
 	def keyPressEvent(self, kevt):
-		# show/hide local modifications - H and Alt-H
-		# TODO: add menu prompts for this?
+		# show/hide local modifications - H and Shift-H
 		if kevt.key() == Qt.Key_H:
 			if kevt.modifiers():
-				# alt-h? 
-				if kevt.modifiers() == Qt.Key_Alt:
+				# XXX: alt-h would have been nicer, but alt is taken for the menus 
+				if kevt.modifiers() == Qt.Key_Shift:
 					project.clearSkipList();
 					self.emit(SIGNAL('skiplistChanged()'));
 					
@@ -552,6 +551,19 @@ class SvnStatusList(QTreeView):
 				
 				kevt.accept();
 				return;
+		
+		# diff
+		elif kevt.key() == Qt.Key_D: 
+			if kevt.modifiers() == Qt.Key_Shift:
+				# get and show diff for file, assuming that we only want the one that's deemed "active"
+				# NOTE: user needs to actually click in this box to get any response!
+				item = self.model.getItem(self.currentIndex());
+				
+				if self.canDiffItem(item, verbose=True):
+					self.svnDiff(item);
+					
+					kevt.accept();
+					return;
 		
 		# just use the standard one if all else fails
 		super(SvnStatusList, self).keyPressEvent(kevt);
