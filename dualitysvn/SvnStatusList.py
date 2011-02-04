@@ -530,6 +530,31 @@ class SvnStatusList(QTreeView):
 		
 		if self.canDiffItem(item, verbose=True):
 			self.svnDiff(item);
+			
+	# handle hotkeys 
+	def keyPressEvent(self, kevt):
+		# show/hide local modifications - H and Alt-H
+		# TODO: add menu prompts for this?
+		if kevt.key() == Qt.Key_H:
+			if kevt.modifiers():
+				# alt-h? 
+				if kevt.modifiers() == Qt.Key_Alt:
+					project.clearSkipList();
+					self.emit(SIGNAL('skiplistChanged()'));
+					
+					kevt.accept();
+					return;	
+			else:
+				# no modifiers - hide checked items
+				for item in self.model.checked:
+					project.addSkipPath(item.path);
+				self.emit(SIGNAL('skiplistChanged()'));
+				
+				kevt.accept();
+				return;
+		
+		# just use the standard one if all else fails
+		super(SvnStatusList, self).keyPressEvent(kevt);
 	
 	# context-menu event override
 	def contextMenuEvent(self, event):
@@ -553,9 +578,9 @@ class SvnStatusList(QTreeView):
 		# - 'canBeModified' defines whether the list of items in the list can be changed by user actions
 		if self.canBeModified:
 			if item:
-				aAddSkip = menu.addAction("Hide Path as 'Local-Only Modification'");
+				aAddSkip = menu.addAction("Hide Path as 'Local-Only Modification' (Hotkey: <i>H</i>)");
 			
-			aFreeSkips = menu.addAction("Show All 'Local-Only Modifications'");
+			aFreeSkips = menu.addAction("Show All 'Local-Only Modifications' (Hotkey: <i>Alt H</i>)");
 		
 		# process menu
 		if menu.isEmpty():
