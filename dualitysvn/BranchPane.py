@@ -93,8 +93,10 @@ class BranchPanel(QWidget):
 		
 		# 2a) update from repository 
 		self.wUpdate = QPushButton("SVN Update");
-		self.wUpdate.setToolTip("Fetch and apply recent changes made to the repository to working copy");
+		self.wUpdate.setToolTip("Fetch and apply recent changes made to the repository to working copy (<i>F6</i>)");
 		self.wUpdate.setFont(bfont);
+		
+		self.wUpdate.setShortcut(QKeySequence.fromString("F6"));
 		self.wUpdate.clicked.connect(self.svnUpdate);
 		
 		gbox.addWidget(self.wUpdate, 1,1); # r1 c1
@@ -118,8 +120,9 @@ class BranchPanel(QWidget):
 		
 		# 3.1b) "toggle all" button
 		self.wToggleAllStatus = QPushButton("Toggle All");
-		self.wToggleAllStatus.setToolTip("Toggle whether all or none or the paths are included for editing (shown by checked status)");
+		self.wToggleAllStatus.setToolTip("Toggle whether all or none or the paths are included for editing (shown by checked status) (Hotkey: <i>A</i>)");
 		
+		self.wToggleAllStatus.setShortcut(QKeySequence.fromString("A"));
 		self.wToggleAllStatus.clicked.connect(self.statusToggleAll);
 		
 		gbox.addWidget(self.wToggleAllStatus, 1,3); # r1 c3
@@ -127,7 +130,7 @@ class BranchPanel(QWidget):
 		# 3.1c) "refresh" button
 		# FIXME: need icons...
 		self.wRefreshStatus = QPushButton(QIcon.fromTheme("view-refresh"), "Refresh"); 
-		self.wRefreshStatus.setToolTip("Refresh the list of paths shown and their current versioning status (<i>F5</i>)");
+		self.wRefreshStatus.setToolTip("Refresh the list of paths shown and their current versioning status (Hotkey: <i>F5</i>)");
 		self.wRefreshStatus.setFont(bfont);
 		
 		self.wRefreshStatus.setShortcut(QKeySequence.fromString("F5"));
@@ -138,7 +141,7 @@ class BranchPanel(QWidget):
 		
 		# 3.1c2) "stop refresh" button - only visible when needed
 		self.wStopRefreshStatus = QPushButton("Stop");
-		self.wStopRefreshStatus.setToolTip("Stop refreshing the status list (<i>ESC</i>)");
+		self.wStopRefreshStatus.setToolTip("Stop refreshing the status list (Hotkey: <i>ESC</i>)");
 		
 		self.wStopRefreshStatus.setShortcut(QKeySequence.fromString("Esc"));
 		#self.wStopRefreshStatus.clicked.connect(self.stopRefreshStatus); # NOTE: this is bound by the process as needed
@@ -163,14 +166,18 @@ class BranchPanel(QWidget):
 		
 		# 4a) add
 		self.wAdd = QPushButton("Add");
-		self.wAdd.setToolTip("Mark selected paths for addition to repository during a future commit");
+		self.wAdd.setToolTip("Mark selected paths for addition to repository during a future commit (Hotkey: <i>Shift A</i>)");
+		
+		self.wAdd.setShortcut(QKeySequence.fromString("Shift+A"));
 		self.wAdd.clicked.connect(self.svnAdd);
 		
 		gbox.addWidget(self.wAdd, 1,1); # r1 c1
 		
 		# 4b) delete
 		self.wDelete = QPushButton("Delete");
-		self.wDelete.setToolTip("Mark selected paths for deletion during a future commit");
+		self.wDelete.setToolTip("Mark selected paths for deletion during a future commit (Hotkey: <i>Alt X</i>)");
+		
+		self.wDelete.setShortcut(QKeySequence.fromString("Alt+X"));
 		self.wDelete.clicked.connect(self.svnDelete);
 		
 		gbox.addWidget(self.wDelete, 1,2); # r1 c2
@@ -179,7 +186,9 @@ class BranchPanel(QWidget):
 		
 		# 5) Revert
 		self.wRevert = QPushButton("Revert");
-		self.wRevert.setToolTip("Undo changes to selected paths made in local copy");
+		self.wRevert.setToolTip("Undo changes to selected paths made in local copy (Hotkey: <i>Ctrl R</i>)");
+		
+		self.wRevert.setShortcut(QKeySequence.fromString("Ctrl+R"));
 		self.wRevert.clicked.connect(self.svnRevert);
 		
 		self.layout.addWidget(self.wRevert);
@@ -201,13 +210,14 @@ class BranchPanel(QWidget):
 		# 6b) Commit
 		if self.branchType == BranchType.TYPE_TRUNK_REF:
 			self.wCommit = QPushButton("Reintegrate Branch Changes");
-			self.wCommit.setToolTip("Apply all changes made in branch back to trunk (from which it was originally branched from)");
+			self.wCommit.setToolTip("Apply all changes made in branch back to trunk (from which it was originally branched from) (Hotkey: <i>Spacebar</i>)");
 			self.wCommit.clicked.connect(self.svnReintegrate);
 		else:
 			self.wCommit = QPushButton("Commit");
-			self.wCommit.setToolTip("Send selected changes in working copy to repository");
+			self.wCommit.setToolTip("Send selected changes in working copy to repository (Hotkey: <i>Spacebar</i>)");
 			self.wCommit.setFont(bfont);
 			self.wCommit.clicked.connect(self.svnCommit);
+		self.wCommit.setShortcut(QKeySequence.fromString("Space"));
 		gbox.addWidget(self.wCommit, 2,1); # r2 c1
 		
 	# Callbacks ==============================================================

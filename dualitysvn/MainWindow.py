@@ -201,6 +201,9 @@ class DualityWindow(QMainWindow):
 		# branches
 		self.updateVisibleBranches();
 		
+		# force active window to have focus (and not any of the widgets)
+		self.setFocus();
+		
 	# determine visible branches, updating as necessary
 	# TODO: need a way to signal destructive update - i.e. project changed!
 	def updateVisibleBranches(self):
