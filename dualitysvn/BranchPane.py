@@ -93,10 +93,10 @@ class BranchPanel(QWidget):
 		
 		# 2a) update from repository 
 		self.wUpdate = QPushButton("SVN Update");
-		self.wUpdate.setToolTip("Fetch and apply recent changes made to the repository to working copy (<i>F6</i>)");
+		self.wUpdate.setToolTip("Fetch and apply recent changes made to the repository to working copy (<i>U</i>)");
 		self.wUpdate.setFont(bfont);
 		
-		self.wUpdate.setShortcut(QKeySequence.fromString("F6"));
+		self.wUpdate.setShortcut(QKeySequence.fromString("U"));
 		self.wUpdate.clicked.connect(self.svnUpdate);
 		
 		gbox.addWidget(self.wUpdate, 1,1); # r1 c1
