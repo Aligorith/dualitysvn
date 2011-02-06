@@ -271,6 +271,14 @@ class BranchPanel(QWidget):
 	# Working Copy Import ----------------------------------------------------
 	
 	def svnUpdate(self):
+		# abort the status list refresh process, in case the locks show up
+		if self.refreshProcess is not None:
+			# silence the error prompts so that no popup will appear here
+			self.refreshProcess.silentErrors = True;
+			
+			print "SVN Update: Aborting refresh status to avoid the svn locks"
+			self.refreshProcess.endProcess();
+		
 		# setup process
 		p1 = SvnOperationProcess(self, "Update");
 		p1.setupEnv(self.branchType);
@@ -284,6 +292,9 @@ class BranchPanel(QWidget):
 		dlg.addProcess(p1);
 		
 		dlg.go();
+		
+		# now schedule update to status list
+		self.svnRefreshStatus();
 		
 	
 	def svnApplyPatch(self):
@@ -390,6 +401,7 @@ class BranchPanel(QWidget):
 	# get list of items to operate on
 	# > return: (SvnStatusListDatalist)
 	def statusListGetOperatable(self):
+		# TODO: for some cases, we should wait before being allowed to start any actions
 		return self.wStatusView.getOperationList();
 	
 	# ...........
