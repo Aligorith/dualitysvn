@@ -93,6 +93,8 @@ class DualityWindow(QMainWindow):
 			self.wDirectory = QLineEdit();
 		self.wDirectory.setToolTip("Directory where working copy is located");
 		self.wDirectory.setPlaceholderText("e.g. ./src/");
+		self.wDirectory.setFocusPolicy(Qt.ClickFocus); # it shouldn't gain focus by itself or through tabbing!
+		
 		self.wDirectory.textChanged.connect(self.setWorkingCopyDir);
 		
 		gbox.addWidget(self.wDirectory, 1,2); # r1 c2
@@ -200,9 +202,6 @@ class DualityWindow(QMainWindow):
 		
 		# branches
 		self.updateVisibleBranches();
-		
-		# force active window to have focus (and not any of the widgets)
-		self.setFocus();
 		
 	# determine visible branches, updating as necessary
 	# TODO: need a way to signal destructive update - i.e. project changed!

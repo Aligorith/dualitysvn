@@ -80,6 +80,7 @@ class BranchPanel(QWidget):
 		self.wUrl = QLineEdit();
 		self.wUrl.setPlaceholderText("e.g. https://svnroot/project/my-branch");
 		self.wUrl.setToolTip("URL pointing to where the branch is stored in the SVN repository");
+		self.wUrl.setFocusPolicy(Qt.ClickFocus); # it shouldn't gain focus by itself or through tabbing!
 		
 		gbox.addWidget(self.wUrl, 1,2); # r1 c2
 		
