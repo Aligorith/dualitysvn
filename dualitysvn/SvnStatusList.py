@@ -590,9 +590,9 @@ class SvnStatusList(QTreeView):
 		# - 'canBeModified' defines whether the list of items in the list can be changed by user actions
 		if self.canBeModified:
 			if item:
-				aAddSkip = menu.addAction("Hide Path as 'Local-Only Modification' (Hotkey: <i>H</i>)");
+				aAddSkip = menu.addAction("Hide Path as 'Local-Only Modification' (Hotkey: H)");
 			
-			aFreeSkips = menu.addAction("Show All 'Local-Only Modifications' (Hotkey: <i>Alt H</i>)");
+			aFreeSkips = menu.addAction("Show All 'Local-Only Modifications' (Hotkey: Alt H)");
 		
 		# process menu
 		if menu.isEmpty():
