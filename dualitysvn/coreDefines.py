@@ -41,6 +41,10 @@ else:
 ####################################
 # Defines
 
+# Duality Constants -----------------
+
+DUALITY_VERSION_STRING = "0.1"
+
 # Svn Settings ----------------------
 
 # folder names where svn keeps its meta data for the two branches

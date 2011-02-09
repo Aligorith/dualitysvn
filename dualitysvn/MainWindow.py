@@ -425,7 +425,12 @@ class DualityWindow(QMainWindow):
 	
 	# about box
 	def aboutInfo(self):
-		QMessageBox.about(self, "About Duality SVN",
-			"A SVN Client which makes standard branch management fast and easy!");
+		aboutText  = "<p><b>Duality SVN</b><br>"
+		aboutText += "Version: %s<br>" % (DUALITY_VERSION_STRING)
+		aboutText += "By Joshua Leung</p>"
+		aboutText += "<p>A SVN Client which makes working version control with SVN "
+		aboutText += "easy, with simple branch management for real people.</p>"
+		
+		QMessageBox.about(self, "About Duality SVN", aboutText);
 
 #########################################
