@@ -90,14 +90,16 @@ class SvnCommitDialog(QDialog):
 		grp.addLayout(gbox);
 		
 		self.wLoadMessage = QPushButton("Load...");
-		self.wLoadMessage.setToolTip("Load commit log from an existing file");
+		self.wLoadMessage.setToolTip("Load commit log from an existing file (Hotkey: <i>Ctrl L</i>)");
 		self.wLoadMessage.setFocusPolicy(Qt.NoFocus); # otherwise, log mesage doesn't get focus
+		self.wLoadMessage.setShortcut(QKeySequence.fromString("Ctrl+L"));
 		self.wLoadMessage.clicked.connect(self.logLoadCb);
 		gbox.addWidget(self.wLoadMessage, 1,1); # r1 c1
 		
 		self.wSaveMessage = QPushButton("Save...");
-		self.wSaveMessage.setToolTip("Save commit log to a file (for later use)");
+		self.wSaveMessage.setToolTip("Save commit log to a file (for later use) (Hotkey: <i>Ctrl S</i>)");
 		self.wSaveMessage.setFocusPolicy(Qt.NoFocus); # otherwise, log mesage doesn't get focus
+		self.wSaveMessage.setShortcut(QKeySequence.fromString("Ctrl+S"));
 		self.wSaveMessage.clicked.connect(self.logSaveCb);
 		gbox.addWidget(self.wSaveMessage, 1,2); # r1 c2
 		
@@ -115,8 +117,8 @@ class SvnCommitDialog(QDialog):
 		self.layout.addWidget(grp);
 		
 		# 3a) ok - aka "commit"
-		# TODO: validation of currently non-commitable, but later ok files needs to be done...
 		self.wCommit = grp.addButton("Commit", QDialogButtonBox.AcceptRole);
+		self.wCommit.setShortcut(QKeySequence.fromString("Ctrl+Enter")); # XXX: this is getting caught!
 		self.wCommit.clicked.connect(self.accept);
 		
 		# 3b) cancel 
@@ -131,17 +133,20 @@ class SvnCommitDialog(QDialog):
 		bareMessage = str(self.getLogMessage()).strip();
 		
 		# only if there is content, may we continue...
-		self.wCommit.setEnabled(len(bareMessage) >= SvnCommitDialog.MIN_LOG_LEN);
+		ok = len(bareMessage) >= SvnCommitDialog.MIN_LOG_LEN
+		self.wCommit.setEnabled(ok);
+		
+		return ok;
 		
 	# override of 'commit' button
 	def accept(self):
+		print "do accept"
+		
+		# validate message length is necessary in case hotkey was used instead?
 		# perform validation of files, including additional action if necessary...
-		if self.validatePaths():
+		if self.validateMessageLength() and self.validatePaths():
 			# now perform standard action
 			return super(SvnCommitDialog, self).accept();
-		else:
-			# already rejected...
-			pass;
 			
 	# ------------------------
 	
