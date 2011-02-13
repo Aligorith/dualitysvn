@@ -5,6 +5,8 @@
 
 from coreDefines import *
 
+import shutil
+
 #######################################
 # Branch Setup Utilities
 

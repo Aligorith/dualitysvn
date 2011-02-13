@@ -3,6 +3,8 @@
 #
 # Svn Commit Dialog - Commit log message construction
 
+import textwrap
+
 from coreDefines import *
 
 from SvnOperationProcess import *
@@ -140,8 +142,6 @@ class SvnCommitDialog(QDialog):
 		
 	# override of 'commit' button
 	def accept(self):
-		print "do accept"
-		
 		# validate message length is necessary in case hotkey was used instead?
 		# perform validation of files, including additional action if necessary...
 		if self.validateMessageLength() and self.validatePaths():

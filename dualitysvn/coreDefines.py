@@ -7,17 +7,10 @@
 # Standard Modules
 
 import sys
-
 import os
-import shutil
-import subprocess
-
-import textwrap
 
 ####################################
 # UI - PyQt
-
-import PyQt4
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
@@ -30,7 +23,7 @@ from SvnTools import *
 ####################################
 # "Project" Global
 
-from Project import *
+from Project import DualitySettings
 
 # XXX: is this stable at all? need to verify this carefully once everything works
 if len(sys.argv) > 1:
