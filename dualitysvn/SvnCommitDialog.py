@@ -159,9 +159,8 @@ class SvnCommitDialog(QDialog):
 		fileName = str(fileName);
 		
 		# try to load...
-		# TODO: try to hang on to this filename, so that the saving function is more useful?
 		if fileName:
-			self.loadLogMessage();
+			self.loadLogMessage(fileName);
 		
 	# log message saving
 	def logSaveCb(self):
@@ -230,7 +229,9 @@ class SvnCommitDialog(QDialog):
 		# validate that file actually exists
 		if os.path.exists(fileN):
 			# open file
+			print "Loading '%s'..."
 			with open(fileN, 'r') as f:
+				print "\tFile opened... reading..."
 				self.wLog.setPlainText(f.read());
 		else:
 			print "Log message doesn't exist - '%s'" % fileN;		
