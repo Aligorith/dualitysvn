@@ -187,9 +187,9 @@ class BranchPanel(QWidget):
 		
 		# 5) Revert
 		self.wRevert = QPushButton("Revert");
-		self.wRevert.setToolTip("Undo changes to selected paths made in local copy (Hotkey: <i>Ctrl R</i>)");
+		self.wRevert.setToolTip("Undo changes to selected paths made in local copy (Hotkey: <i>Alt R</i>)");
 		
-		self.wRevert.setShortcut(QKeySequence.fromString("Ctrl+R"));
+		self.wRevert.setShortcut(QKeySequence.fromString("Alt+R"));
 		self.wRevert.clicked.connect(self.svnRevert);
 		
 		self.layout.addWidget(self.wRevert);
