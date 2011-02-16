@@ -25,7 +25,11 @@
 # Original Author: Joshua Leung (aligorith@gmail.com)
 # Coded: November 2010
 
-from dualitysvn import *
+import sys
+
+from PyQt4.QtGui import QApplication
+
+from dualitysvn import DualityWindow
 
 ###########################################
 # Launch Application
