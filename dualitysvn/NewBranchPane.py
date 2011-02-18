@@ -379,6 +379,7 @@ For example:
 	# ...........................
 	
 	# setup from existing checkout
+	# TODO: make a "svn info" object, and separate out the base-logic for this into that file so that it can be reused for file-loading
 	def fromExisting(self):
 		# verify that the "working directory" specified exists
 		if os.path.exists(project.workingCopyDir) == False:

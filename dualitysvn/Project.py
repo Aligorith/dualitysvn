@@ -120,37 +120,47 @@ class DualitySettings:
 		
 	# -----------------------
 	
-	# TODO: error-proof this file io code!
-	
 	# Load config file
 	def load(self):
 		# reset defaults
 		self.resetDefaults();
 		
-		# grab filepointer
-		with open(self.fileN, 'r') as f:
-			# create parser
-			cfg = TameConfigParser();
+		# if filename is a directory, user is trying to use "new from existing checkout"
+		# so we should load up the relevant info from that instead
+		if os.path.isdir(self.fileN):
+			# "filename" is really a directory, so store that as our working copy directory
+			self.workingCopyDir = self.fileN;
 			
-			# read file to populate parser's buffer
-			cfg.readfp(f);
+			# clear fileN by revalidating it (so that user has option of saving a proper config later
+			self.fileN = verifyLoadFile(None);
 			
-			# grab the values for the various parts
-			cfg.get("Project", "WorkingCopy", self, 'workingCopyDir');
-			cfg.get("Project", "TempFiles", self, 'tempFilesDir');
-			
-			cfg.getint("Project", "ActiveTabIndex", self, 'activeTabIndex');
-			
-			cfg.get("Trunk", "url", self, 'urlTrunk');
-			
-			if cfg.has_section("Branch"):
-				cfg.get("Branch", "url", self, 'urlBranch');
-				cfg.get("Branch", "name", self, 'nameBranch');
+			# check for .svn folder, and try to find out URL...
+			# XXX: for now, just let user have to manually set up "new existing checkout" to complete the process
+		else:
+			# grab filepointer and read file
+			with open(self.fileN, 'r') as f:
+				# create parser
+				cfg = TameConfigParser();
 				
-			# load skiplist section
-			# 	- currently, this is just a section with a list of items without any values 
-			for name,val in cfg.items("Skip-List"):
-				self.skiplist.add(name);
+				# read file to populate parser's buffer
+				cfg.readfp(f);
+				
+				# grab the values for the various parts
+				cfg.get("Project", "WorkingCopy", self, 'workingCopyDir');
+				cfg.get("Project", "TempFiles", self, 'tempFilesDir');
+				
+				cfg.getint("Project", "ActiveTabIndex", self, 'activeTabIndex');
+				
+				cfg.get("Trunk", "url", self, 'urlTrunk');
+				
+				if cfg.has_section("Branch"):
+					cfg.get("Branch", "url", self, 'urlBranch');
+					cfg.get("Branch", "name", self, 'nameBranch');
+					
+				# load skiplist section
+				# 	- currently, this is just a section with a list of items without any values 
+				for name,val in cfg.items("Skip-List"):
+					self.skiplist.add(name);
 			
 			
 	# Save config file
