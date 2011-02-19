@@ -108,6 +108,16 @@ class ProjectSettingsDialog(QDialog):
 		grp.addWidget(self.wSkipListView, 2,1, 1,4); # r2 c1, h1 w4
 		
 		# 2.3) commands...
+		# 2.3.1) toggle all
+		self.wSkipListToggleSel = QPushButton("Toggle All");
+		self.wSkipListToggleSel.setToolTip("Toggle selection of all paths in list of 'local only' modifications");
+		self.wSkipListToggleSel.setFocusPolicy(Qt.ClickFocus); # it shouldn't gain focus by itself or through tabbing!
+		
+		self.wSkipListToggleSel.clicked.connect(self.skiplistToggleSel);
+		
+		grp.addWidget(self.wSkipListToggleSel, 3,1, 1,1); # r3 c1, h1 w1
+		
+		# 2.3.2) remove selected
 		self.wSkipListRemove = QPushButton("Remove");
 		self.wSkipListRemove.setToolTip("Remove selected paths from list of 'local only' modifications");
 		self.wSkipListRemove.setFocusPolicy(Qt.ClickFocus); # it shouldn't gain focus by itself or through tabbing!
@@ -197,5 +207,14 @@ class ProjectSettingsDialog(QDialog):
 		
 		# send update signals
 		self.emit(SIGNAL('skiplistChanged()'));
+		
+	# Toggle selection of all items in list
+	def skiplistToggleSel(self):
+		# anything selected?
+		# TODO: there has to be a faster/more efficient way!
+		if len(self.wSkipListView.selectedItems()):
+			self.wSkipListView.clearSelection();
+		else:
+			self.wSkipListView.selectAll();
 
 #########################################
