@@ -20,4 +20,6 @@ from SvnStatusList import *
 from SvnOperationDialog import *
 from SvnCommitDialog import *
 
+from ProjectSettingsDialog import *
+
 from MainWindow import *

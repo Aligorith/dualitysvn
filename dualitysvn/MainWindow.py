@@ -8,6 +8,8 @@ from coreDefines import *
 from BranchPane import *
 from NewBranchPane import *
 
+from ProjectSettingsDialog import *
+
 #########################################
 
 # Main Window
@@ -192,7 +194,7 @@ class DualityWindow(QMainWindow):
 		if project.autofile:
 			self.setWindowTitle("Duality SVN");
 		elif project.unsaved:
-			self.setWindowtitle('%s* - Duality SVN' % os.path.split(project.fileN)[1]);
+			self.setWindowTitle('%s* - Duality SVN' % os.path.split(project.fileN)[1]);
 		else:
 			self.setWindowTitle('%s - Duality SVN' % os.path.split(project.fileN)[1]);
 		
@@ -380,9 +382,14 @@ class DualityWindow(QMainWindow):
 	# Settings -------------------------------------------
 	
 	def projectConfig(self):
-		print "Project Settings Config dialog"
-		# - temp-dir for log/target files
-	
+		# set up dialog
+		pdlg = ProjectSettingsDialog(self);
+		
+		# hook up update event callbacks too
+		self.connect(pdlg, SIGNAL('skiplistChanged()'), self.updateProjectWidgets); # XXX: too extreme?s
+		
+		# show it 
+		pdlg.show();
 	
 	def svnConfig(self):
 		print "SVN Settings Config dialog"

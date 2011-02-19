@@ -231,6 +231,11 @@ class DualitySettings:
 		self.skiplist.add(str(value));
 		self.unsaved = True;
 		
+	# < value: (str) path to remove from list of paths to ignore
+	def removeSkipPath(self, value):
+		self.skiplist.remove(str(value));
+		self.unsaved = True;
+		
 	# clear out all entries from skip list
 	def clearSkipList(self):
 		# clear if non-empty
