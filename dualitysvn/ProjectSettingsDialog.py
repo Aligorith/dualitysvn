@@ -59,7 +59,7 @@ class ProjectSettingsDialog(QDialog):
 		
 		# 1.2) browse-button for directory widget
 		self.wDirBrowseBut = QPushButton("Browse...");
-		self.wDirBrowseBut.setFocusPolicy(Qt.ClickFocus); # it shouldn't gain focus by itself or through tabbing!
+		self.wDirBrowseBut.setFocusPolicy(Qt.NoFocus); # it shouldn't gain focus by itself or through tabbing!
 		
 		self.wDirBrowseBut.clicked.connect(self.tempDirBrowseCb);
 		
@@ -80,16 +80,16 @@ class ProjectSettingsDialog(QDialog):
 		# 2.1.1) Text-field for defining new item to add
 		self.wSkipListNewItem = QLineEdit();
 		self.wSkipListNewItem.setPlaceholderText("e.g. relative/path/to/directory_or_file_to_ignore");
-		self.wSkipListNewItem.setFocusPolicy(Qt.ClickFocus); # it shouldn't gain focus by itself or through tabbing!
-		
-		# TODO: connect text-entered event to validate add button
-		# TODO: connect enter-event (i.e. finished) to add button's callback...
+		\
+		self.wSkipListNewItem.textChanged.connect(self.validateNewSkipPathLength);
+		self.wSkipListNewItem.returnPressed.connect(self.skiplistAdd);
 		
 		grp.addWidget(self.wSkipListNewItem, 1,1, 1,3); # r1 c1, h1 w3
 		
 		# 2.1.2) Add button for adding new item
 		self.wSkipListAdd = QPushButton("+");
 		self.wSkipListAdd.setToolTip("Add new path to ignore as 'local only' modification (existing files in under version control will not get committed over)");
+		self.wSkipListAdd.setEnabled(False);
 		
 		self.wSkipListAdd.clicked.connect(self.skiplistAdd);
 		
@@ -111,7 +111,7 @@ class ProjectSettingsDialog(QDialog):
 		# 2.3.1) toggle all
 		self.wSkipListToggleSel = QPushButton("Toggle All");
 		self.wSkipListToggleSel.setToolTip("Toggle selection of all paths in list of 'local only' modifications");
-		self.wSkipListToggleSel.setFocusPolicy(Qt.ClickFocus); # it shouldn't gain focus by itself or through tabbing!
+		self.wSkipListToggleSel.setFocusPolicy(Qt.NoFocus); # it shouldn't gain focus by itself or through tabbing!
 		
 		self.wSkipListToggleSel.clicked.connect(self.skiplistToggleSel);
 		
@@ -120,7 +120,7 @@ class ProjectSettingsDialog(QDialog):
 		# 2.3.2) remove selected
 		self.wSkipListRemove = QPushButton("Remove");
 		self.wSkipListRemove.setToolTip("Remove selected paths from list of 'local only' modifications");
-		self.wSkipListRemove.setFocusPolicy(Qt.ClickFocus); # it shouldn't gain focus by itself or through tabbing!
+		self.wSkipListRemove.setFocusPolicy(Qt.NoFocus); # it shouldn't gain focus by itself or through tabbing!
 		
 		self.wSkipListRemove.clicked.connect(self.skiplistRemove);
 		
@@ -134,8 +134,9 @@ class ProjectSettingsDialog(QDialog):
 		grp = QDialogButtonBox();
 		self.layout.addWidget(grp);
 		
-		self.wClose = grp.addButton("Close", QDialogButtonBox.AcceptRole);
-		self.wClose.clicked.connect(self.accept);
+		self.wClose = grp.addButton("Close", QDialogButtonBox.RejectRole);
+		self.wClose.setFocusPolicy(Qt.NoFocus); # it shouldn't gain focus by itself or through tabbing!
+		self.wClose.clicked.connect(self.reject);
 		
 	# Callbacks ========================================
 	
@@ -164,21 +165,30 @@ class ProjectSettingsDialog(QDialog):
 		
 	# Skip-List -------------------------------------------
 	
+	# make sure that there is a valid skip path before allowing adding...
+	def validateNewSkipPathLength(self):
+		# get path, and strip off all whitespace
+		path = str(self.wSkipListNewItem.text()).strip();
+		
+		# only if there's content and it exists may we continue
+		if path:
+			fullPath = os.path.join(project.workingCopyDir, path);
+		else:
+			fullPath = "";
+			
+		ok = os.path.exists(fullPath);
+		self.wSkipListAdd.setEnabled(ok);
+		
+		return ok;
+	
+	# ..................
+	
 	# Add item to skip list
 	def skiplistAdd(self):
 		# get value from new-item widget
-		newVal = str(self.wSkipListNewItem.text());
+		newVal = str(self.wSkipListNewItem.text()).strip();
 		if not newVal:
 			print "No item to add to skiplist"
-			return;
-			
-		# validate that path is valid...
-		fullPath = os.path.join(project.workingCopyDir, newVal);
-		if os.path.exists(fullPath) is False:
-			# TODO: allow this to work, or allow a "did you mean?"
-			QMessageBox.warning(self,
-				"Add Path as Local Only Modification",
-				"Cannot add, as path does not exist");
 			return;
 		
 		# add this to the underlying list, then to the view as well
