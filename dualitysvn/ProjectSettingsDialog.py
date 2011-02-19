@@ -80,7 +80,7 @@ class ProjectSettingsDialog(QDialog):
 		# 2.1.1) Text-field for defining new item to add
 		self.wSkipListNewItem = QLineEdit();
 		self.wSkipListNewItem.setPlaceholderText("e.g. relative/path/to/directory_or_file_to_ignore");
-		\
+		
 		self.wSkipListNewItem.textChanged.connect(self.validateNewSkipPathLength);
 		self.wSkipListNewItem.returnPressed.connect(self.skiplistAdd);
 		
