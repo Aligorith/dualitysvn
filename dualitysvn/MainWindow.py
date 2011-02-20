@@ -189,7 +189,7 @@ class DualityWindow(QMainWindow):
 	# update widgets after altering project settings
 	# - optional args are used to specify if only "smaller" cases occurred
 	# FIXME: this method needs a good rethink/recode???
-	def updateProjectWidgets(self, workingCopyChanged=False):
+	def updateProjectWidgets(self):
 		# update titlebar
 		if project.autofile:
 			self.setWindowTitle("Duality SVN");
@@ -199,8 +199,7 @@ class DualityWindow(QMainWindow):
 			self.setWindowTitle('%s - Duality SVN' % os.path.split(project.fileN)[1]);
 		
 		# directory
-		if workingCopyChanged == False:
-			self.wDirectory.setText(project.workingCopyDir);
+		self.wDirectory.setText(project.workingCopyDir);
 		
 		# branches
 		self.updateVisibleBranches();
@@ -408,7 +407,7 @@ class DualityWindow(QMainWindow):
 		# set this directory
 		if newDir:
 			project.setWorkingCopyDir(str(newDir));
-			self.updateProjectWidgets(workingCopyChanged=True);
+			self.updateProjectWidgets();
 			
 	# Set working copy directory callback wrapper
 	def setWorkingCopyDir(self):
@@ -418,7 +417,7 @@ class DualityWindow(QMainWindow):
 		# flush back to project settings, but only if different
 		if project.workingCopyDir != value:
 			project.setWorkingCopyDir(value);
-			self.updateProjectWidgets(workingCopyChanged=True);
+			self.updateProjectWidgets();
 		else:
 			print "wc paths same"
 		
