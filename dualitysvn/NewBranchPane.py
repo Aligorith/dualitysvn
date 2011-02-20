@@ -366,9 +366,13 @@ For example:
 		dlg.go();
 		
 		# if successful, set project's new working copy + url settings
-		# XXX: what's going on with working copy dir now?
 		if dlg.status == ProcessStatus.STATUS_DONE:
+			# URL is just the one above that we used
 			project.urlTrunk = url;
+			
+			# working copy directory will get the last part of the URL, which we assume will be included in the path
+			#	- str.rpartition() returns 3 parts: bulk-of-path, /, foldername   <-- we take foldername
+			project.setWorkingCopyDir(os.path.join(project.workingCopyDir, url.rpartition("/")[-1]));
 			
 			# send signal for updating branch tabs
 			self.emit(SIGNAL('projectBranchesChanged()'));

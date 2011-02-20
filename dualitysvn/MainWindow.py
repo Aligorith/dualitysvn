@@ -227,7 +227,8 @@ class DualityWindow(QMainWindow):
 			self.wTabs.setTabToolTip(0, "Set up working copy sandbox for project");
 			
 			# hook up setup done event
-			self.connect(self.pCheckout, SIGNAL('projectBranchesChanged()'), self.updateVisibleBranches);
+			#	- not updateVisibleBranches(), as working copy directory may have changed too...
+			self.connect(self.pCheckout, SIGNAL('projectBranchesChanged()'), self.updateProjectWidgets);
 			
 			return;
 		
