@@ -151,6 +151,9 @@ class NewBranchPanel(QWidget):
 		cp.setOp("cleanup");
 		cp.setDefaultArgs();
 		
+		# hack: run cleanup first, until we have a process for the duplicate step
+		print "Running Pre-creation Cleanup"
+		cp.runBlocking();
 		
 		# make a copy of the existing svn metadata - i.e. setup "trunk" copy as "branch2"
 		# TODO: make this attach to some process (dp)
@@ -182,7 +185,7 @@ class NewBranchPanel(QWidget):
 		# setup dialog to perform operations
 		dlg = SvnOperationDialog(self, "Create New Branch");
 		
-		dlg.addProcess(cp);
+		#dlg.addProcess(cp);
 		#dlg.addProcess(dp);
 		dlg.addProcess(bp);
 		dlg.addProcess(sp);
