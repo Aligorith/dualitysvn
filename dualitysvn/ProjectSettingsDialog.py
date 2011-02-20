@@ -5,16 +5,10 @@
 
 from coreDefines import *
 
-from SvnStatusList import *
-
 #########################################
 # Project Settings Dialog
 
 class ProjectSettingsDialog(QDialog):
-	__slots__ = (
-	
-	);
-	
 	# Setup ============================================
 	
 	# ctor
@@ -144,6 +138,9 @@ class ProjectSettingsDialog(QDialog):
 	
 	# Temp files directory browse callback
 	def tempDirBrowseCb(self):
+		if not project.tempFilesDir:
+			project.tempFilesDir = ".";
+		
 		# get new directory
 		newDir = QFileDialog.getExistingDirectory(self, "Open Directory",
 			project.tempFilesDir,
@@ -152,8 +149,7 @@ class ProjectSettingsDialog(QDialog):
 		
 		# set this directory
 		if newDir:
-			project.setTempFilesDir(str(newDir));
-			#self.updateProjectWidgets(workingCopyChanged=True);
+			self.wDirectory.setText(newDir);
 			
 	# Set working copy directory callback wrapper
 	def setTempFilesDir(self, value):
