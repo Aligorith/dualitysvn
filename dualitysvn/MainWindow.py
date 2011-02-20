@@ -97,7 +97,7 @@ class DualityWindow(QMainWindow):
 		self.wDirectory.setPlaceholderText("e.g. ./src/");
 		self.wDirectory.setFocusPolicy(Qt.ClickFocus); # it shouldn't gain focus by itself or through tabbing!
 		
-		self.wDirectory.textChanged.connect(self.setWorkingCopyDir);
+		self.wDirectory.editingFinished.connect(self.setWorkingCopyDir);
 		
 		gbox.addWidget(self.wDirectory, 1,2); # r1 c2
 		
@@ -411,10 +411,13 @@ class DualityWindow(QMainWindow):
 			self.updateProjectWidgets(workingCopyChanged=True);
 			
 	# Set working copy directory callback wrapper
-	def setWorkingCopyDir(self, value):
+	def setWorkingCopyDir(self):
+		# from the editing finished callback, we get no value
+		value = str(self.wDirectory.text());
+		
 		# flush back to project settings, but only if different
-		if project.workingCopyDir != str(value):
-			project.setWorkingCopyDir(str(value));
+		if project.workingCopyDir != value:
+			project.setWorkingCopyDir(value);
 			self.updateProjectWidgets(workingCopyChanged=True);
 		else:
 			print "wc paths same"
