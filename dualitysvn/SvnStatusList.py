@@ -55,11 +55,11 @@ class SvnStatusListItem:
 			
 	# parse settings from a string
 	# < initStr: (str) input string
-	def fromString(self, initStr):
+	def fromString(self, initStr, numStatusColumns=7):
 		try:
 			# chop into 2 parts: status and path
-			statusStr = initStr[:7]; 		 # first 7 columns 
-			self.path = initStr[8:].strip(); # rest of string after status columns
+			statusStr = initStr[:numStatusColumns]; 		  # first (numStatusColumns or 7) columns 
+			self.path = initStr[numStatusColumns+1:].strip(); # rest of string after status columns
 			
 			# decipher status string
 				# col 1: file status
@@ -586,6 +586,9 @@ class SvnStatusList(QTreeView):
 		if self.canDiffItem(item):
 			aDiff = menu.addAction("Show changes (diff)");
 			menu.setDefaultAction(aDiff);
+			
+		if "Conflicted" in (item.file_status, item.prop_status):
+			aResolve = menu.addAction("Conflicts Resolved");
 		
 		# - 'canBeModified' defines whether the list of items in the list can be changed by user actions
 		if self.canBeModified:
@@ -610,7 +613,9 @@ class SvnStatusList(QTreeView):
 		elif action == aFreeSkips:
 			project.clearSkipList();
 			self.emit(SIGNAL('skiplistChanged()'));
-
+		elif action == aResolve:
+			self.svnResolved(item);
+			self.emit(SIGNAL('skiplistChanged()')); # FIXME: temporary hack for now
 	
 	# Methods ===========================================
 	
@@ -668,7 +673,7 @@ class SvnStatusList(QTreeView):
 		
 		# setup process for svn diff operation
 		process = SvnOperationProcess(self, "Diff");
-		branchType = BranchType.TYPE_TRUNK; # XXX: FIXME!!! we need a way of getting this, but the old way we used didn't do this either!
+		branchType = project.getActiveBranchType();
 		process.setupEnv(branchType);
 		
 		process.setOp("diff");
@@ -701,5 +706,30 @@ class SvnStatusList(QTreeView):
 		#	- this is run in a blocking manner, since there's no way to cancel this operation
 		#	  from UI, and user probably won't expect anything else
 		process.runBlocking();
+		
+	# Mark file as having all conflicts resolved already
+	# < item: (SvnStatusListItem) status list item to clear "conflicted" status flags for
+	# TODO: for now, we can't tell when a file is a textfile, otherwise, 
+	# 		we should check if there are still conflict markers in the file...
+	def svnResolved(self, item):
+		# sanity check
+		if item is None:
+			return;
+			
+		# assume for now that branch type is valid
+		branchType = project.getActiveBranchType();
+		
+		# setup process for svn resolved operation .
+		#	- this is run in a blocking manner, since there's no way to cancel this operation
+		#	  from UI, and user probably won't expect anything else
+		p1 = SvnOperationProcess(self, "Conflict Resolved");
+		p1.setupEnv(branchType);
+		
+		p1.setOp("resolved");
+		p1.addDefaultArgs();
+		p1.addArgs([str(item.path)]);
+		
+		# run as blocking, since nothing else can happen now
+		p1.runBlocking();
 
 #########################################

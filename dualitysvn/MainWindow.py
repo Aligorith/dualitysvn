@@ -151,7 +151,7 @@ class DualityWindow(QMainWindow):
 		self.mFileMenu.addSeparator();
 		
 		self.mFileMenu.addAction(self.aProjectConfig);
-		self.mFileMenu.addAction(self.aSvnConfig);
+		#self.mFileMenu.addAction(self.aSvnConfig);
 		
 		self.mFileMenu.addSeparator();
 		
@@ -161,7 +161,7 @@ class DualityWindow(QMainWindow):
 		self.mEditMenu = self.menuBar().addMenu("&Edit");
 		#self.mEditMenu.addAction("Show Log"); # FIXME: placeholder
 		self.mEditMenu.addAction(self.aCleanup);
-		self.mEditMenu.addAction("Edit Conflicts"); # FIXME: placeholder
+		#self.mEditMenu.addAction("Edit Conflicts"); # FIXME: placeholder
 		
 		# 3) help menu
 		self.mHelpMenu = self.menuBar().addMenu("&Help");
@@ -206,6 +206,7 @@ class DualityWindow(QMainWindow):
 		self.updateVisibleBranches();
 		
 	# determine visible branches, updating as necessary
+	# ! Keep this in sync with Project.getActiveBranchType()
 	# TODO: need a way to signal destructive update - i.e. project changed!
 	def updateVisibleBranches(self):
 		# clear all tabs first 

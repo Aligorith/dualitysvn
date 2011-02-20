@@ -196,6 +196,27 @@ class DualitySettings:
 		self.unsaved = False;
 		
 	# Setters =================================
+	
+	# Get the type of the active branch tab
+	# ! Keep this in sync with the logic in MainWindow.updateVisibleBranches()
+	# > returns BranchType.TYPE_* or None
+	def getActiveBranchType(self):
+		# if active tab is 2, it must be the branch
+		if self.activeTabIndex == 2:
+			return BranchType.TYPE_BRANCH;
+			
+		# if active tab is 1, then it is either trunk or trunk-reference
+		elif self.activeTabIndex == 1:
+			if self.urlBranch:
+				return BranchType.TYPE_TRUNK_REF;
+			else:
+				return BranchType.TYPE_TRUNK;
+		
+		# otherwise, there isn't a branch!
+		else:
+			return None;
+	
+	# Setters =================================
 	# Note: these setters MUST be used, otherwise, we don't get the the unsaved tag being set (causing problems later)
 	
 	# < value: (str) new value

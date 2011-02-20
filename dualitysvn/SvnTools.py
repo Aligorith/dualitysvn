@@ -78,10 +78,13 @@ SvnOp_Args = {
 		 #'-F', LOGFILE		# <--- these are added manually by commit code
 		],
 		
-	'cleanup':
+	'cleanup' :
 		[],
 		
-	'diff':
+	'diff' :
+		[],
+		
+	'resolved' :
 		[]
 };
 
