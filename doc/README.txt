@@ -27,7 +27,13 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
+== Installation Instructions ==
+
+See the following page on the Project's Wiki: 
+http://code.google.com/p/dualitysvn/wiki/Install_SysReqs
+
 == Websites/Contact ==
+
 The project website: http://code.google.com/p/dualitysvn/
 The author's blog: http://aligorith.blogspot.com
 
