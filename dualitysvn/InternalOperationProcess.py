@@ -56,6 +56,7 @@ class ProcessOutputBuffer:
 class ThreadAsFauxProcess(QThread):
 	__slots__ = (
 		'_state',		# (QProcess.ProcessState)
+		
 		'_exitCode',	# (int)
 		'_exitStatus',	# (QProcess.ExitStatus)
 		
@@ -66,21 +67,25 @@ class ThreadAsFauxProcess(QThread):
 	
 	# Setup ================================================================
 	
-	def __init__ (self, func_op):
+	def __init__ (self):
 		# initialise owner stuff
 		QThread.__init__(self)
 		
 		# "starting" state = not yet started, but being prepared to be started
 		self._state = QProcess.Starting;
 		
+		# exit codes
+		self._exitCode = None;
+		self._exitStatus = None;
+		
 		# "output" buffers
+		self._bufChannel = QProcess.StandardOutput;
 		self._outBuf = ProcessOutputBuffer();
 		self._errBuf = ProcessOutputBuffer();
 		
 	# QProcess API =========================================================
 		
 	# QProcess-style "state" polling
-	# TODO: there needs to be something to check for when the process ends...
 	def state(self):
 		return self._state;
 		
@@ -156,7 +161,7 @@ class ThreadAsFauxProcess(QThread):
 		# ... own operations - may contain the templates above ...
 		
 		# when done, we must notify the owner
-		self.done(0, QProcess.NormalExit);
+		self.done(0);
 		#self.done(-1, QProcess.CrashExit);
 		
 	# Own Wrapping API =======================================================
@@ -180,7 +185,7 @@ class ThreadAsFauxProcess(QThread):
 	# Operation done - cues up relevant Qt signals
 	# < exitCode: (int) 0 for normal exit, non-zero otherwise
 	# < exitStatus: (QProcess.ExitStatus)
-	def done(self, exitCode, exitStatus):
+	def done(self, exitCode, exitStatus=QProcess.NormalExit):
 		# store exit code/status for retrieval later
 		self._exitCode = exitCode;
 		self._exitStatus = exitStatus;
