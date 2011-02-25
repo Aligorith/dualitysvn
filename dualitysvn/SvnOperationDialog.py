@@ -151,6 +151,7 @@ class SvnOperationDialog(QDialog):
 		
 		def procDone(sop):
 			# remove process from stack of processes
+			# FIXME: if this was already removed from stack for whatever reason, 
 			del sop.parent.pQ[0];
 			
 			# if didn't end with failure, try to start up next procedure

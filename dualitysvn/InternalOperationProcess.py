@@ -111,7 +111,7 @@ class ThreadAsFauxProcess(QThread):
 		# nasty, but the closest we can get to kill a process is to terminate the thread
 		# XXX: careful! otherwise, may hang?
 		self.terminate();
-		self.done(); 
+		self.done(-1, QProcess.CrashExit); # XXX? 
 		
 	# QProcess-style "run blocking"
 	def waitForFinished(self, dummyArg):
@@ -199,6 +199,7 @@ class ThreadAsFauxProcess(QThread):
 		self._state = QProcess.NotRunning;
 		
 		# Qt-signal
+		# FIXME: QProcess usage here has problems
 		self.emit(SIGNAL('finished(int, QProcess::ExitStatus)'), exitCode, exitStatus);
 
 ####################################
