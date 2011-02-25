@@ -214,16 +214,20 @@ class SvnOperationDialog(QDialog):
 			
 			# create new process now to just cleanup
 			# - reuse environment that the last op was in
-			cp = SvnOperationProcess(self, "Cancelled Operation Cleanup");
-			cp.setupEnv(headP.process.processEnvironment);
-			
-			cp.setOp("cleanup");
-			cp.addDefaultArgs();
-			
-			# - run modal-blocking
-			print "Cancel cleanup..."
-			cp.runBlocking();
-			print "Cleanup done"
+			# - only need to do this if the process was a SVN operation
+			if isinstance(headP, SvnOperationProcess):
+				cp = SvnOperationProcess(self, "Cancelled Operation Cleanup");
+				cp.setupEnv(headP.process.processEnvironment);
+				
+				cp.setOp("cleanup");
+				cp.addDefaultArgs();
+				
+				# - run modal-blocking
+				print "Cancel cleanup..."
+				cp.runBlocking();
+				print "Cleanup done"
+			else:
+				print "No need to run SVN Cleanup - not SvnOperationProcess (%s)" % type(headP)
 		
 		# now, cancel the dialog using it's own version
 		super(SvnOperationDialog, self).reject();

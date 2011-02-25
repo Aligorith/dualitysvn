@@ -26,6 +26,7 @@ class ProcessOutputBuffer:
 		self.latest = [];
 		
 	# Add some text to the "unread" buffer
+	# FIXME: readline assumes that each entry is a new line...
 	def append(self, text):
 		self.latest.append(text);
 		
@@ -36,10 +37,10 @@ class ProcessOutputBuffer:
 	# "Read" a line from the buffer, returning the line as a string for further usage
 	def readLine(self):
 		# move first line from start of "latest" to tail of "archive"
-		line = latest[0];
+		line = self.latest[0];
 		
-		del latest[0];
-		archive.append(line);
+		del self.latest[0];
+		self.archive.append(line);
 		
 		return line;
 
@@ -57,6 +58,8 @@ class ProcessOutputBuffer:
 
 class ThreadAsFauxProcess(QThread):
 	__slots__ = (
+		'args',			# (list) list of settings that may be useful
+		
 		'_state',		# (QProcess.ProcessState)
 		
 		'_exitCode',	# (int)
@@ -72,6 +75,9 @@ class ThreadAsFauxProcess(QThread):
 	def __init__ (self):
 		# initialise owner stuff
 		QThread.__init__(self)
+		
+		# arguments
+		self.args = [];
 		
 		# "starting" state = not yet started, but being prepared to be started
 		self._state = QProcess.Starting;
@@ -93,22 +99,19 @@ class ThreadAsFauxProcess(QThread):
 		
 	# QProcess-style "start", which is a wrapper around QThread.start()
 	def start(self, args):
-		try:
-			# set runtime arguments
-			self.args += list(args);
-			
-			# now, try to start the thread now
-			QThread.start(self);
-			self._state = QProcess.Running;
-		except RuntimeException:
-			# thread is already running
-			self._state = QProcess.NotRunning;
-			
+		# set runtime arguments
+		self.args += list(args);
+		
+		# now, try to start the thread now
+		QThread.start(self);
+		self._state = QProcess.Running;
+		
 	# QProcess-style "kill"
 	def kill(self):
 		# nasty, but the closest we can get to kill a process is to terminate the thread
+		# XXX: careful! otherwise, may hang?
 		self.terminate();
-		self._state = QProcess.NotRunning;
+		self.done(); 
 		
 	# QProcess-style "run blocking"
 	def waitForFinished(self, dummyArg):
@@ -192,8 +195,11 @@ class ThreadAsFauxProcess(QThread):
 		self._exitCode = exitCode;
 		self._exitStatus = exitStatus;
 		
+		# set running state to stopped...
+		self._state = QProcess.NotRunning;
+		
 		# Qt-signal
-		self.emit(SIGNAL('finished(int)'), exitCode);
+		self.emit(SIGNAL('finished(int, QProcess::ExitStatus)'), exitCode, exitStatus);
 
 ####################################
 # InternalOperationProcess
@@ -202,18 +208,25 @@ class ThreadAsFauxProcess(QThread):
 # though this ends up being run in a blocking manner
 
 class InternalOperationProcess(AbstractOperationProcess):
+	__slots__ = (
+		'args',		# (list) list of data that should get passed to the thread
+	);
+	
 	# Internal Setup ==============================
 	
 	# setup "process" for grabbing stuff from
 	def __init__(self, parent, name, processThread):
-		super(InternalOperationProcess, self).__init__(parent, name, processThread)
+		# init generic settings
+		super(InternalOperationProcess, self).__init__(parent, name, processThread);
+		
+		# arguments that thread might need
+		self.args = [];
 		
 	# Callbacks =================================
 	
 	# Internal method for starting the process 
 	# Overrides the basic stub in the abstract baseclass
 	def _start(self):
-		# just call start - all the properties/args should have been set in the thread already
-		self.process.start();
+		self.process.start(self.args);
 
 ####################################
