@@ -149,16 +149,21 @@ class NewBranchPanel(QWidget):
 		cp.setupEnv(BranchType.TYPE_TRUNK); # we've only got "trunk" so far
 		
 		cp.setOp("cleanup");
-		cp.setDefaultArgs();
+		cp.addDefaultArgs();
 		
-		# hack: run cleanup first, until we have a process for the duplicate step
-		print "Running Pre-creation Cleanup"
-		cp.runBlocking();
 		
 		# make a copy of the existing svn metadata - i.e. setup "trunk" copy as "branch2"
-		# TODO: make this attach to some process (dp)
-		print "Setting up Working Copy Duality..."
-		duplicateSvnMetadata(srcdir);
+		class DuplicateSvnMetadata(ThreadAsFauxProcess):
+			def run(self):
+				srcdir = self.args[0];
+				
+				errors = duplicateSvnMetadata(srcdir); # FIXME: just inline this...
+				
+				for err in errors:
+					self.error(str(err));
+		
+		dp = InternalOperationProcess(self, "Setup Working Copy Duality", DuplicateSvnMetadata());
+		dp.addArgs(srcdir);
 		
 		
 		# perform an "svn copy" operation to make a new branch on the repository
@@ -167,9 +172,9 @@ class NewBranchPanel(QWidget):
 		
 		bp.setupEnv(BranchType.TYPE_TRUNK); # can only branch from a "trunk"
 		
-		bp.setOp("co");
+		bp.setOp("copy");
 		bp.addArgs([srcdir, target]); # from, to
-		bp.addArgs(['-m', "Creating '%s' branch from'%s'\n\nCourtesy of Duality SVN" % (branchName, source)]); # commit log message
+		bp.addArgs(['-m', '"Creating \"%s\" branch from\"%s\"\n\nCourtesy of Duality SVN"' % (branchName, source)]); # commit log message
 		
 		
 		# change working copy to the branch now
@@ -185,15 +190,15 @@ class NewBranchPanel(QWidget):
 		# setup dialog to perform operations
 		dlg = SvnOperationDialog(self, "Create New Branch");
 		
-		#dlg.addProcess(cp);
-		#dlg.addProcess(dp);
+		dlg.addProcess(cp);
+		dlg.addProcess(dp);
 		dlg.addProcess(bp);
 		dlg.addProcess(sp);
 		
 		dlg.go();
 		
 		# send signal for updating branch tabs, but only if successful
-		if dlg.status == ProcessStatus.STATUS_FINISHED:
+		if dlg.status == ProcessStatus.STATUS_DONE:
 			self.emit(SIGNAL('projectBranchesChanged()'));
 
 #########################################

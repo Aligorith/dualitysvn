@@ -13,7 +13,7 @@ from dualitysvn.InternalOperationProcess import *
 class TestThreadProcess(ThreadAsFauxProcess):
 	def run(self):
 		self.error("> Starting thread:\r\n")
-		for x in range(30):
+		for x in range(100):
 			self.write("\t%d\r\n" % (x))
 		self.error("> Thread done\r\n")
 		self.done(0)

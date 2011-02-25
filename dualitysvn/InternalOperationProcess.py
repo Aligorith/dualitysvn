@@ -224,6 +224,13 @@ class InternalOperationProcess(AbstractOperationProcess):
 		# arguments that thread might need
 		self.args = [];
 		
+	# External Setup API ========================
+	
+	# Add a list of arguments to be passed to svn when running it
+	# < args: (list<str>) list of arguments to run
+	def addArgs(self, args):
+		self.args += args;
+		
 	# Callbacks =================================
 	
 	# Internal method for starting the process 

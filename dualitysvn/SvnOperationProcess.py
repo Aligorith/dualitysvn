@@ -87,6 +87,7 @@ class SvnOperationProcess(AbstractOperationProcess):
 		if self.tarList:
 			tarFileN = self.tarList.savePathsFile(self.svnOp);
 			tarArgs = ['--targets', tarFileN];
+			print "saved targets list to '%s'" % tarFileN
 		else:
 			tarArgs = [];
 		

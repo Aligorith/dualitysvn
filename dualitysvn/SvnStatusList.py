@@ -574,6 +574,10 @@ class SvnStatusList(QTreeView):
 		index = self.indexAt(event.pos());
 		item = self.model.getItem(index);
 		
+		if item is None:
+			print "Empty list or nothing under mouse?"
+			return;
+		
 		# create menu, and setup hooks to the various actions
 		menu = QMenu(self);
 		
