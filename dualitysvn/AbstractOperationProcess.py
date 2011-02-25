@@ -85,6 +85,7 @@ class AbstractOperationProcess:
 		self.parent.connect(self.process, SIGNAL("readyReadStandardOutput()"), self.readOutput);
 		self.parent.connect(self.process, SIGNAL("readyReadStandardError()"), self.readErrors);
 		self.parent.connect(self.process, SIGNAL("finished(int, QProcess::ExitStatus)"), self.processEnded);
+		self.parent.connect(self.process, SIGNAL("finished(int)"), self.processEnded);
 	
 	# External Setup API ========================
 	
@@ -233,7 +234,7 @@ class AbstractOperationProcess:
 			self.postEndCb(self);
 		
 	# callback called when svn operation process ends
-	def processEnded(self, exitCode, exitStatus):
+	def processEnded(self, exitCode, exitStatus=QProcess.NormalExit):
 		# grab rest of output
 		self.readRemaining();
 		

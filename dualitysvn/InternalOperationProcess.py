@@ -199,8 +199,9 @@ class ThreadAsFauxProcess(QThread):
 		self._state = QProcess.NotRunning;
 		
 		# Qt-signal
-		# FIXME: QProcess usage here has problems
-		self.emit(SIGNAL('finished(int, QProcess::ExitStatus)'), exitCode, exitStatus);
+		# 	- for now, we can only do the uncommented version, otherwise process will never be marked as finished
+		#self.emit(SIGNAL('finished(int, QProcess::ExitStatus)'), exitCode, exitStatus);
+		self.emit(SIGNAL('finished(int)'), exitCode);
 
 ####################################
 # InternalOperationProcess
