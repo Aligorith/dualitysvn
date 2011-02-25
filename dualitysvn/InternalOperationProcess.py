@@ -6,6 +6,8 @@
 
 from coreDefines import *
 
+from AbstractOperationProcess import *
+
 ####################################
 # Output Buffer
 #
@@ -199,6 +201,19 @@ class ThreadAsFauxProcess(QThread):
 # This wrapper allows functions to get run as if they were processes
 # though this ends up being run in a blocking manner
 
-# ! Keep this in sync with SvnOperationProcess
+class InternalOperationProcess(AbstractOperationProcess):
+	# Internal Setup ==============================
+	
+	# setup "process" for grabbing stuff from
+	def __init__(self, parent, name, processThread):
+		super(InternalOperationProcess, self).__init__(parent, name, processThread)
+		
+	# Callbacks =================================
+	
+	# Internal method for starting the process 
+	# Overrides the basic stub in the abstract baseclass
+	def _start(self):
+		# just call start - all the properties/args should have been set in the thread already
+		self.process.start();
 
 ####################################

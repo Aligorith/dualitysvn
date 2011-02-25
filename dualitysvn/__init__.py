@@ -14,6 +14,7 @@ from SvnTools import *
 # import everything into here just to make things easier
 # FIXME: make proper use of namespaces...
 from SvnOperationProcess import *
+from InternalOperationProcess import *
 
 from SvnStatusList import *
 
