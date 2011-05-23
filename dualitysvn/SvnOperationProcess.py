@@ -87,7 +87,7 @@ class SvnOperationProcess(AbstractOperationProcess):
 		if self.tarList:
 			tarFileN = self.tarList.savePathsFile(self.svnOp);
 			tarArgs = ['--targets', tarFileN];
-			print "saved targets list to '%s'" % tarFileN
+			print "saved targets list to '%s'" % (tarFileN)
 		else:
 			tarArgs = [];
 		
@@ -99,8 +99,13 @@ class SvnOperationProcess(AbstractOperationProcess):
 	def doneProcess(self):
 		# cleanup targets list temp file (if needed)
 		if self.tarList:
-			tarFile = self.tarList.getPathsFileName(self.svnOp);
-			os.remove(tarFile);
+			try:
+				tarFile = self.tarList.getPathsFileName(self.svnOp);
+				os.remove(tarFile);
+			except:
+				# file may already have been removed
+				print "targets list already removed? - '%s'" % (tarFile)
+				pass;
 		
 		# now run the standard version
 		super(SvnOperationProcess, self).doneProcess();
