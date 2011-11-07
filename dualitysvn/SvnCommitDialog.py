@@ -25,7 +25,7 @@ class SvnCommitDialog(QDialog):
 	MIN_LOG_LEN = 3;
 	
 	# Word-Wrap
-	wordWrapper = textwrap.TextWrapper();
+	wordWrapper = textwrap.TextWrapper(width=100);
 	
 	# Instance Settings ================================
 	__slots__ = (
