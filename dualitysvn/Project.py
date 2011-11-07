@@ -37,6 +37,8 @@ class DualitySettings:
 		'activeTabIndex',	# (int) active tab index
 		
 		'skiplist',			# (list<str>) list of paths to ignore in our UI only - i.e. with temp changes we don't want shared yet
+		
+		'ignoreExternals',	# (bool) whether "external" repository links should be ignored when performing updates,etc.
 	);
 	
 	# Setup =====================================
@@ -111,6 +113,9 @@ class DualitySettings:
 		# no branches by default!
 		self.urlBranch = None; 
 		self.nameBranch = None;
+		
+		# ignore externals is off by default to limit problems
+		self.ignoreExternals = False;
 		
 		# active tab index
 		self.activeTabIndex = 0;

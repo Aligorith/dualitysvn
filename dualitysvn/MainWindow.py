@@ -134,6 +134,10 @@ class DualityWindow(QMainWindow):
 		self.aCleanup = QAction("&Cleanup (Fix SVN Errors)",
 			self, triggered=self.branchCleanup);
 			
+		self.aOptIgnoreExterns = QAction("Ignore Externals",
+			self, triggered=self.toggleIgnoreWarnings);
+		self.aOptIgnoreExterns.setCheckable(True);
+			
 		# help -----------------------------------
 		self.aAbout = QAction("&About",
 			self, shortcut="F12", triggered=self.aboutInfo);
@@ -159,6 +163,10 @@ class DualityWindow(QMainWindow):
 		
 		# 2) branch/tool menu
 		self.mToolMenu = self.menuBar().addMenu("&Tools");
+		self.mToolMenu.addAction(self.aOptIgnoreExterns);
+		
+		self.mToolMenu.addSeparator();
+		
 		#self.mToolMenu.addAction("Show Log"); # FIXME: placeholder
 		self.mToolMenu.addAction(self.aCleanup);
 		#self.mToolMenu.addAction("Edit Conflicts"); # FIXME: placeholder
@@ -394,7 +402,7 @@ class DualityWindow(QMainWindow):
 	
 	def svnConfig(self):
 		print "SVN Settings Config dialog"
-	
+		
 	# Working Copy ---------------------------------------
 	
 	# Working copy directory browse callback
@@ -443,5 +451,13 @@ class DualityWindow(QMainWindow):
 		aboutText += "easy, with simple branch management for real people.</p>"
 		
 		QMessageBox.about(self, "About Duality SVN", aboutText);
+		
+	# Property Binding -----------------------------------
+	# FIXME: there's got to be a cleaner way!
+		
+	def toggleIgnoreWarnings(self):
+		# just update this setting - property binding
+		project.ignoreExternals = self.aOptIgnoreExterns.isChecked();
+	
 
 #########################################

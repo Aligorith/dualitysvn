@@ -287,6 +287,10 @@ class BranchPanel(QWidget):
 		p1.setOp("update");
 		p1.addDefaultArgs();
 		
+		if project.ignoreExternals:
+			# "ignore externals" option allows quicker updates on some repositories
+			p1.addArgs(['--ignore-externals']);
+		
 		# setup and run dialog
 		dlg = SvnOperationDialog(self, "Update");
 		
@@ -347,6 +351,10 @@ class BranchPanel(QWidget):
 		
 		rp.setOp("status");
 		rp.addDefaultArgs();
+		
+		if project.ignoreExternals:
+			# "ignore externals" option allows quicker updates on some repositories
+			rp.addArgs(['--ignore-externals']);
 		
 		rp.setControlWidgets(self.wRefreshStatus, self.wStopRefreshStatus);
 		rp.wTarget = self.wStatusView;
