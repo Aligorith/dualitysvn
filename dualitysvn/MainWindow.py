@@ -130,7 +130,7 @@ class DualityWindow(QMainWindow):
 		self.aExit = QAction("E&xit", 
 			self, shortcut="Ctrl+Q", triggered=self.close);
 			
-		# edit -----------------------------------
+		# tools ----------------------------------
 		self.aCleanup = QAction("&Cleanup (Fix SVN Errors)",
 			self, triggered=self.branchCleanup);
 			
@@ -157,11 +157,11 @@ class DualityWindow(QMainWindow):
 		
 		self.mFileMenu.addAction(self.aExit);
 		
-		# 2) branch menu
-		self.mEditMenu = self.menuBar().addMenu("&Edit");
-		#self.mEditMenu.addAction("Show Log"); # FIXME: placeholder
-		self.mEditMenu.addAction(self.aCleanup);
-		#self.mEditMenu.addAction("Edit Conflicts"); # FIXME: placeholder
+		# 2) branch/tool menu
+		self.mToolMenu = self.menuBar().addMenu("&Tools");
+		#self.mToolMenu.addAction("Show Log"); # FIXME: placeholder
+		self.mToolMenu.addAction(self.aCleanup);
+		#self.mToolMenu.addAction("Edit Conflicts"); # FIXME: placeholder
 		
 		# 3) help menu
 		self.mHelpMenu = self.menuBar().addMenu("&Help");
