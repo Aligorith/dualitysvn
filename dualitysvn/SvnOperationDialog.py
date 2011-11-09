@@ -114,6 +114,10 @@ class SvnOperationDialog(QDialog):
 		
 		# output redirection callbacks
 		def pushOutput(sop, line):
+			# linux hack: if no EOL char, add one
+			if line[-1] != '\n':
+				line += '\n'
+			
 			# insert adds without extra line padding, then scroll to this point
 			sop.wTarget.setReadOnly(False);
 			
@@ -124,6 +128,10 @@ class SvnOperationDialog(QDialog):
 		process.handleOutputCb = pushOutput;
 		
 		def pushErrors(sop, line):
+			# linux hack: if no EOL char, add one
+			if line[-1] != '\n':
+				line += '\n'
+			
 			# grab current formatting info so that we can add red text
 			cTFormat = sop.wTarget.currentCharFormat();
 			
