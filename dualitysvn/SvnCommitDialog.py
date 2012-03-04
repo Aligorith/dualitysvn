@@ -120,7 +120,7 @@ class SvnCommitDialog(QDialog):
 		
 		# 3a) ok - aka "commit"
 		self.wCommit = grp.addButton("Commit", QDialogButtonBox.AcceptRole);
-		self.wCommit.setShortcut(QKeySequence.fromString("Ctrl+Enter")); # XXX: this is getting caught!
+		self.wCommit.setShortcut(QKeySequence.fromString("Ctrl+Return"));
 		self.wCommit.clicked.connect(self.accept);
 		
 		# 3b) cancel 
