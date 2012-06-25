@@ -7,6 +7,7 @@
 
 from coreDefines import *
 
+import platform
 from SvnOperationProcess import *
 
 #########################################
@@ -119,8 +120,8 @@ class SvnOperationDialog(QDialog):
 		# output redirection callbacks
 		def pushOutput(sop, line):
 			# linux hack: if no EOL char, add one
-			if line[-1] != '\n':
-				line += '\n'
+			if (platform.system() == 'Linux') and (line[-1] != '\n'):
+				line += '\n';
 			
 			# insert adds without extra line padding, then scroll to this point
 			sop.wTarget.setReadOnly(False);
