@@ -81,6 +81,10 @@ class SvnOperationDialog(QDialog):
 		self.wStatus.setReadOnly(True);
 		grp.addWidget(self.wStatus, 1,1); # r1 c1
 		
+		font = QFont("Monospace");
+		font.setStyleHint(font.TypeWriter, font.PreferDefault);
+		self.wStatus.setFont(font);
+		
 		# 1b) progress bar?
 		# TODO
 		

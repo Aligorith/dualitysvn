@@ -17,6 +17,11 @@ class DiffWidget(QTextBrowser):
 		
 		# set tab width - 4 cw's please!
 		self.setTabStopWidth(self.cursorWidth()*4*5);
+		
+		# set monospaced fonts - looks more like code
+		font = QFont("Monospace");
+		font.setStyleHint(font.TypeWriter, font.PreferDefault);
+		self.setFont(font);
 
 
 #########################################
@@ -32,7 +37,7 @@ class DiffViewer(QMainWindow):
 		
 		# window settings
 		self.setWindowTitle("Duality Diff Viewer");
-		self.setGeometry(150, 150, 600, 400);
+		self.setGeometry(150, 150, 700, 400);
 		
 		# setup UI
 		self.setupUI();
